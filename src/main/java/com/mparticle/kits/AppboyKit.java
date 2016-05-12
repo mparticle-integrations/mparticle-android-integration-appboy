@@ -19,18 +19,12 @@ import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.commerce.Product;
 import com.mparticle.internal.CommerceEventUtil;
 import com.mparticle.internal.ConfigManager;
-import com.mparticle.internal.PushRegistrationHelper;
-import com.mparticle.messaging.MessagingConfigCallbacks;
-
-import org.json.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -268,13 +262,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     }
 
     @Override
-    public boolean willHandlePushMessage(Set<String> keyset) {
+    public boolean willHandlePushMessage(Intent intent) {
         if (!Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
             return false;
-        }
-        Intent intent = new Intent();
-        for (String key : keyset) {
-            intent.putExtra(key, "");
         }
         return AppboyNotificationUtils.isAppboyPushMessage(intent);
     }
