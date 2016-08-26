@@ -17,7 +17,6 @@ import com.mparticle.MParticle;
 import com.mparticle.MParticle.UserAttributes;
 import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.commerce.Product;
-import com.mparticle.internal.CommerceEventUtil;
 import com.mparticle.internal.ConfigManager;
 
 import java.math.BigDecimal;
@@ -98,7 +97,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     @Override
     public List<ReportingMessage> logEvent(CommerceEvent event) {
         List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
-        if (!TextUtils.isEmpty(event.getProductAction()) &&
+        if (!KitUtils.isEmpty(event.getProductAction()) &&
                 event.getProductAction().equalsIgnoreCase(Product.PURCHASE) &&
                 event.getProducts().size() > 0) {
             List<Product> productList = event.getProducts();
@@ -108,7 +107,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             messages.add(ReportingMessage.fromEvent(this, event));
             return messages;
         }
-        List<MPEvent> eventList = CommerceEventUtil.expand(event);
+        List<MPEvent> eventList = CommerceEventUtils.expand(event);
         if (eventList != null) {
             for (int i = 0; i < eventList.size(); i++) {
                 try {
@@ -219,13 +218,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     private void logTransaction(CommerceEvent event, Product product) {
         AppboyProperties purchaseProperties = new AppboyProperties();
         Map<String, String> eventAttributes = new HashMap<String, String>();
-        CommerceEventUtil.extractActionAttributes(event, eventAttributes);
+        CommerceEventUtils.extractActionAttributes(event, eventAttributes);
 
-        String currency = eventAttributes.get(Constants.Commerce.ATT_ACTION_CURRENCY_CODE);
-        if (TextUtils.isEmpty(currency)) {
-            currency = Constants.Commerce.DEFAULT_CURRENCY_CODE;
+        String currency = eventAttributes.get(CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE);
+        if (KitUtils.isEmpty(currency)) {
+            currency = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE;
         }
-        eventAttributes.remove(Constants.Commerce.ATT_ACTION_CURRENCY_CODE);
+        eventAttributes.remove(CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE);
         for (Map.Entry<String, String> entry : eventAttributes.entrySet()) {
             purchaseProperties.addProperty(entry.getKey(), entry.getValue());
         }
