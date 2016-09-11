@@ -33,6 +33,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
 
     static final String APPBOY_KEY = "apiKey";
     public static final String PUSH_ENABLED = "push_enabled";
+    private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
 
     @Override
     public String getName() {
@@ -160,13 +161,19 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
         return true;
     }
 
+    /**
+     * This is called when the Kit is added to the mParticle SDK, typically on app-startup.
+     */
     @Override
     public void setAllUserAttributes(Map<String, String> attributes, Map<String, List<String>> attributeLists) {
-        for (Map.Entry<String, String> entry : attributes.entrySet()){
-            setUserAttribute(entry.getKey(), entry.getValue());
-        }
-        for (Map.Entry<String, List<String>> entry : attributeLists.entrySet()){
-            setUserAttributeList(entry.getKey(), entry.getValue());
+        if (!getKitPreferences().getBoolean(PREF_KEY_HAS_SYNCED_ATTRIBUTES, false)) {
+            for (Map.Entry<String, String> entry : attributes.entrySet()) {
+                setUserAttribute(entry.getKey(), entry.getValue());
+            }
+            for (Map.Entry<String, List<String>> entry : attributeLists.entrySet()) {
+                setUserAttributeList(entry.getKey(), entry.getValue());
+            }
+            getKitPreferences().edit().putBoolean(PREF_KEY_HAS_SYNCED_ATTRIBUTES, true).apply();
         }
     }
 
