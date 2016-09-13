@@ -43,6 +43,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     @Override
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
         String key = settings.get(APPBOY_KEY);
+        if (KitUtils.isEmpty(key)) {
+            throw new IllegalArgumentException("Appboy key is empty.");
+        }
         Appboy.configure(context, key);
         return null;
     }
