@@ -27,7 +27,7 @@ import java.util.Map;
 
 
 /**
- * Embedded version of the AppBoy SDK v 1.7.2
+ * Embedded version of the Appboy SDK v 1.15.2
  */
 public class AppboyKit extends KitIntegration implements KitIntegration.ActivityListener, KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
 
