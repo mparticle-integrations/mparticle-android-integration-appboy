@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.TextUtils;
 
 import com.appboy.Appboy;
@@ -27,13 +28,16 @@ import java.util.Map;
 
 
 /**
- * Embedded version of the Appboy SDK v 1.15.2
+ * Embedded version of the Appboy SDK v 1.15.3
  */
 public class AppboyKit extends KitIntegration implements KitIntegration.ActivityListener, KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
 
     static final String APPBOY_KEY = "apiKey";
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
+    final Handler dataFlushHandler = new Handler();
+    private Runnable dataFlushRunnable;
+    final private static int FLUSH_DELAY = 5000;
 
     @Override
     public String getName() {
@@ -47,6 +51,15 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             throw new IllegalArgumentException("Appboy key is empty.");
         }
         Appboy.configure(context, key);
+        dataFlushRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (MParticle.getInstance().getAppStateManager().isBackgrounded()) {
+                    Appboy.getInstance(getContext()).requestImmediateDataFlush();
+                }
+            }
+        };
+        queueDataFlush();
         return null;
     }
 
@@ -54,7 +67,6 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     public List<ReportingMessage> setOptOut(boolean optedOut) {
         return null;
     }
-
 
     @Override
     public List<ReportingMessage> leaveBreadcrumb(String breadcrumb) {
@@ -82,6 +94,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             }
             Appboy.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
         }
+        queueDataFlush();
         List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
         messages.add(ReportingMessage.fromEvent(this, event));
         return messages;
@@ -109,6 +122,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
                 logTransaction(event, product);
             }
             messages.add(ReportingMessage.fromEvent(this, event));
+            queueDataFlush();
             return messages;
         }
         List<MPEvent> eventList = CommerceEventUtils.expand(event);
@@ -121,6 +135,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
                     ConfigManager.log(MParticle.LogLevel.WARNING, "Failed to call logCustomEvent to Appboy kit: " + e.toString());
                 }
             }
+            queueDataFlush();
         }
         return messages;
     }
@@ -150,6 +165,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             }
             user.setCustomUserAttribute(key, value);
         }
+        queueDataFlush();
     }
 
     @Override
@@ -157,11 +173,17 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
         AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
         String[] array = list.toArray(new String[list.size()]);
         user.setCustomAttributeArray(key, array);
+        queueDataFlush();
     }
 
     @Override
     public boolean supportsAttributeLists() {
         return true;
+    }
+
+    private void queueDataFlush() {
+        dataFlushHandler.removeCallbacks(dataFlushRunnable);
+        dataFlushHandler.postDelayed(dataFlushRunnable, FLUSH_DELAY);
     }
 
     /**
@@ -201,6 +223,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             }
             user.unsetCustomUserAttribute(key);
         }
+        queueDataFlush();
     }
 
     @Override
@@ -209,10 +232,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
         if (MParticle.IdentityType.CustomerId.equals(identityType)) {
             if (user == null || (user.getUserId() != null && !user.getUserId().equals(identity))) {
                 Appboy.getInstance(getContext()).changeUser(identity);
+                queueDataFlush();
             }
         } else if (MParticle.IdentityType.Email.equals(identityType)) {
             user.setEmail(identity);
+            queueDataFlush();
         }
+
     }
 
     @Override
@@ -311,6 +337,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     public boolean onPushRegistration(String instanceId, String senderId) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
             Appboy.getInstance(getContext()).registerAppboyGcmMessages(instanceId);
+            queueDataFlush();
             return true;
         } else {
             return false;
