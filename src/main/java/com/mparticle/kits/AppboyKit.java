@@ -35,6 +35,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
     static final String APPBOY_KEY = "apiKey";
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
+    private static final String PREF_KEY_CURRENT_EMAIL = "appboy::current_email";
     final Handler dataFlushHandler = new Handler();
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
@@ -234,11 +235,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
                 Appboy.getInstance(getContext()).changeUser(identity);
                 queueDataFlush();
             }
-        } else if (MParticle.IdentityType.Email.equals(identityType)) {
+        } else if (MParticle.IdentityType.Email.equals(identityType)
+                && identity != null
+                && !identity.equals(getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null))) {
             user.setEmail(identity);
             queueDataFlush();
+            getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, identity).apply();
         }
-
     }
 
     @Override
