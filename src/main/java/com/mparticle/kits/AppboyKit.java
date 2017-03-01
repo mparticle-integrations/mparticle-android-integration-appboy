@@ -19,6 +19,7 @@ import com.mparticle.MParticle.UserAttributes;
 import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.commerce.Product;
 import com.mparticle.internal.ConfigManager;
+import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -154,7 +155,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                     logEvent(eventList.get(i));
                     messages.add(ReportingMessage.fromEvent(this, event));
                 } catch (Exception e) {
-                    ConfigManager.log(MParticle.LogLevel.WARNING, "Failed to call logCustomEvent to Appboy kit: " + e.toString());
+                    Logger.warning("Failed to call logCustomEvent to Appboy kit: " + e.toString());
                 }
             }
             queueDataFlush();
