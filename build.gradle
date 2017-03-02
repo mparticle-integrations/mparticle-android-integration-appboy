@@ -1,10 +1,10 @@
 buildscript {
     repositories {
         mavenLocal()
-        mavenCentral()
+        jcenter()
     }
     dependencies {
-        classpath 'com.mparticle:android-kit-plugin:+'
+        classpath 'com.mparticle:android-kit-plugin:' + project.version
     }
 }
 
