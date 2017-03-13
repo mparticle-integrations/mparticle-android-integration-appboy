@@ -1,6 +1,7 @@
 package com.mparticle.kits;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.os.Handler;
 
 import com.appboy.Appboy;
 import com.appboy.AppboyGcmReceiver;
+import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.AppboyUser;
 import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
@@ -30,7 +32,7 @@ import java.util.Map;
 /**
  * mParticle client-side Appboy integration
  */
-public class AppboyKit extends KitIntegration implements KitIntegration.ActivityListener, KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
+public class AppboyKit extends KitIntegration implements KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
 
     static final String APPBOY_KEY = "apiKey";
     public static final String PUSH_ENABLED = "push_enabled";
@@ -62,6 +64,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
             }
         };
         queueDataFlush();
+        ((Application)context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
         return null;
     }
 
@@ -275,51 +278,6 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
                 (int) product.getQuantity(),
                 purchaseProperties
         );
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityStopped(Activity activity) {
-        Appboy.getInstance(activity).closeSession(activity);
-        List<ReportingMessage> messageList = new LinkedList<ReportingMessage>();
-        messageList.add(
-                new ReportingMessage(this, ReportingMessage.MessageType.APP_STATE_TRANSITION, System.currentTimeMillis(), null)
-        );
-        return messageList;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivitySaveInstanceState(Activity activity, Bundle outState) {
-        return null;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityDestroyed(Activity activity) {
-        return null;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityCreated(Activity activity, Bundle savedInstanceState) {
-        return null;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityStarted(Activity activity) {
-        Appboy.getInstance(activity).openSession(activity);
-        List<ReportingMessage> messageList = new LinkedList<ReportingMessage>();
-        messageList.add(
-                new ReportingMessage(this, ReportingMessage.MessageType.APP_STATE_TRANSITION, System.currentTimeMillis(), null)
-        );
-        return messageList;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityResumed(Activity activity) {
-        return null;
-    }
-
-    @Override
-    public List<ReportingMessage> onActivityPaused(Activity activity) {
-        return null;
     }
 
     @Override

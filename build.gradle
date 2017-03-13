@@ -10,6 +10,12 @@ buildscript {
 
 apply plugin: 'com.mparticle.kit'
 
+android {
+    defaultConfig {
+        minSdkVersion 14
+    }
+}
+
 repositories {
     maven { url "http://appboy.github.io/appboy-android-sdk/sdk" }
 }
