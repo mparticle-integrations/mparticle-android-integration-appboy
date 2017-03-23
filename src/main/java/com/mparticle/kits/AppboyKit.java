@@ -5,11 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.TextUtils;
 
 import com.appboy.Appboy;
 import com.appboy.AppboyGcmReceiver;
 import com.appboy.AppboyUser;
+import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
 import com.appboy.models.outgoing.AppboyProperties;
 import com.appboy.push.AppboyNotificationUtils;
@@ -28,7 +28,7 @@ import java.util.Map;
 
 
 /**
- * Embedded version of the Appboy SDK v 1.15.3
+ * mParticle client-side Appboy integration
  */
 public class AppboyKit extends KitIntegration implements KitIntegration.ActivityListener, KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
 
@@ -51,7 +51,8 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Activity
         if (KitUtils.isEmpty(key)) {
             throw new IllegalArgumentException("Appboy key is empty.");
         }
-        Appboy.configure(context, key);
+        AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).build();
+        Appboy.configure(context, config);
         dataFlushRunnable = new Runnable() {
             @Override
             public void run() {
