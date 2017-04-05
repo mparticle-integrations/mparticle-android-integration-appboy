@@ -1,10 +1,8 @@
 package com.mparticle.kits;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
 
 import com.appboy.Appboy;
@@ -35,12 +33,14 @@ import java.util.Map;
 public class AppboyKit extends KitIntegration implements KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
 
     static final String APPBOY_KEY = "apiKey";
+    static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
     private static final String PREF_KEY_CURRENT_EMAIL = "appboy::current_email";
     final Handler dataFlushHandler = new Handler();
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
+    private boolean forwardScreenViews = false;
 
     @Override
     public String getName() {
@@ -53,6 +53,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         if (KitUtils.isEmpty(key)) {
             throw new IllegalArgumentException("Appboy key is empty.");
         }
+        forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
         AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).build();
         Appboy.configure(context, config);
         dataFlushRunnable = new Runnable() {
@@ -107,7 +108,23 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public List<ReportingMessage> logScreen(String screenName, Map<String, String> screenAttributes) {
-        return null;
+        if (forwardScreenViews) {
+            if (screenAttributes == null) {
+                Appboy.getInstance(getContext()).logCustomEvent(screenName);
+            } else {
+                AppboyProperties properties = new AppboyProperties();
+                for (Map.Entry<String, String> entry : screenAttributes.entrySet()) {
+                    properties.addProperty(entry.getKey(), entry.getValue());
+                }
+                Appboy.getInstance(getContext()).logCustomEvent(screenName, properties);
+            }
+            queueDataFlush();
+            List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
+            messages.add(new ReportingMessage(this, ReportingMessage.MessageType.SCREEN_VIEW, System.currentTimeMillis(), screenAttributes));
+            return messages;
+        } else {
+            return null;
+        }
     }
 
 
