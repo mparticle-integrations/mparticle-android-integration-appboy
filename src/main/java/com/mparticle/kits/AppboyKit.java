@@ -316,7 +316,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public boolean onPushRegistration(String instanceId, String senderId) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
-            Appboy.getInstance(getContext()).registerAppboyGcmMessages(instanceId);
+            Appboy.getInstance(getContext()).registerAppboyPushMessages(instanceId);
             queueDataFlush();
             return true;
         } else {
