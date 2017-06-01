@@ -11,6 +11,7 @@ import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.AppboyUser;
 import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
+import com.appboy.enums.SdkFlavor;
 import com.appboy.models.outgoing.AppboyProperties;
 import com.appboy.push.AppboyNotificationUtils;
 import com.mparticle.MPEvent;
@@ -55,7 +56,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             throw new IllegalArgumentException("Appboy key is empty.");
         }
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
-        AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).build();
+        AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).setSdkFlavor(SdkFlavor.MPARTICLE).build();
         Appboy.configure(context, config);
         dataFlushRunnable = new Runnable() {
             @Override
