@@ -3,12 +3,14 @@ package com.mparticle.kits;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 
 import com.appboy.Appboy;
 import com.appboy.AppboyGcmReceiver;
 import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.AppboyUser;
+import com.appboy.IAppboyEndpointProvider;
 import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
 import com.appboy.enums.SdkFlavor;
@@ -19,7 +21,6 @@ import com.mparticle.MParticle;
 import com.mparticle.MParticle.UserAttributes;
 import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.commerce.Product;
-import com.mparticle.internal.ConfigManager;
 import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
@@ -36,6 +37,27 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
+
+    static final String HOST = "host";
+    static final String DATA_CENTER_LOCATION = "dataCenterLocation";
+
+    static Map<String, String> clusterMap = new HashMap<String, String>(){{
+        put(LOCATION_EU, EU_HOST);
+        put(CLUSTER_ONE, CLUSTER_ONE_HOST);
+        put(CLUSTER_TWO, CLUSTER_TWO_HOST);
+        put(CLUSTER_THREE, CLUSTER_THREE_HOST);
+    }};
+
+    static final String LOCATION_EU = "EU";
+    static final String CLUSTER_ONE = "01";
+    static final String CLUSTER_TWO = "02";
+    static final String CLUSTER_THREE = "03";
+
+    static final String EU_HOST = "sdk.api.appboy.eu";
+    static final String CLUSTER_ONE_HOST = "dev.appboy.com";
+    static final String CLUSTER_TWO_HOST = "sdk-02.iad.appboy.com";
+    static final String CLUSTER_THREE_HOST = "sdk-03.iad.appboy.com";
+
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
     private static final String PREF_KEY_CURRENT_EMAIL = "appboy::current_email";
@@ -55,6 +77,30 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         if (KitUtils.isEmpty(key)) {
             throw new IllegalArgumentException("Appboy key is empty.");
         }
+
+        //try to get endpoint from the host setting
+        String authority = settings.get(HOST);
+        if (authority == null) {
+            String clusterHost = settings.get(DATA_CENTER_LOCATION);
+            if (!KitUtils.isEmpty(clusterHost) && clusterMap.containsKey(clusterHost)) {
+                authority = clusterMap.get(clusterHost);
+            }
+        }
+        // if endpoint was either included in the host setting, or was able to be set by the data center
+        // location set it, otherwise, use default endpoint
+        if (authority != null) {
+            final String finalAuthority = authority;
+            Appboy.setAppboyEndpointProvider(
+                    new IAppboyEndpointProvider() {
+                        @Override
+                        public Uri getApiEndpoint(Uri appboyEndpoint) {
+                            return appboyEndpoint.buildUpon()
+                                    .authority(finalAuthority).build();
+                        }
+                    }
+            );
+        }
+
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
         AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).setSdkFlavor(SdkFlavor.MPARTICLE).build();
         Appboy.configure(context, config);
@@ -67,7 +113,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             }
         };
         queueDataFlush();
-        ((Application)context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
+        ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
         return null;
     }
 
