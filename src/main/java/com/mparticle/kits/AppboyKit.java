@@ -39,24 +39,6 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
 
     static final String HOST = "host";
-    static final String DATA_CENTER_LOCATION = "dataCenterLocation";
-
-    static Map<String, String> clusterMap = new HashMap<String, String>(){{
-        put(LOCATION_EU, EU_HOST);
-        put(CLUSTER_ONE, CLUSTER_ONE_HOST);
-        put(CLUSTER_TWO, CLUSTER_TWO_HOST);
-        put(CLUSTER_THREE, CLUSTER_THREE_HOST);
-    }};
-
-    static final String LOCATION_EU = "EU";
-    static final String CLUSTER_ONE = "01";
-    static final String CLUSTER_TWO = "02";
-    static final String CLUSTER_THREE = "03";
-
-    static final String EU_HOST = "sdk.api.appboy.eu";
-    static final String CLUSTER_ONE_HOST = "dev.appboy.com";
-    static final String CLUSTER_TWO_HOST = "sdk-02.iad.appboy.com";
-    static final String CLUSTER_THREE_HOST = "sdk-03.iad.appboy.com";
 
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
@@ -80,25 +62,8 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
         //try to get endpoint from the host setting
         String authority = settings.get(HOST);
-        if (authority == null) {
-            String clusterHost = settings.get(DATA_CENTER_LOCATION);
-            if (!KitUtils.isEmpty(clusterHost) && clusterMap.containsKey(clusterHost)) {
-                authority = clusterMap.get(clusterHost);
-            }
-        }
-        // if endpoint was either included in the host setting, or was able to be set by the data center
-        // location set it, otherwise, use default endpoint
-        if (authority != null) {
-            final String finalAuthority = authority;
-            Appboy.setAppboyEndpointProvider(
-                    new IAppboyEndpointProvider() {
-                        @Override
-                        public Uri getApiEndpoint(Uri appboyEndpoint) {
-                            return appboyEndpoint.buildUpon()
-                                    .authority(finalAuthority).build();
-                        }
-                    }
-            );
+        if (!KitUtils.isEmpty(authority)) {
+            setAuthority(authority);
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
@@ -251,7 +216,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         return true;
     }
 
-    private void queueDataFlush() {
+    void queueDataFlush() {
         dataFlushHandler.removeCallbacks(dataFlushRunnable);
         dataFlushHandler.postDelayed(dataFlushRunnable, FLUSH_DELAY);
     }
@@ -369,5 +334,17 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         } else {
             return false;
         }
+    }
+
+    protected void setAuthority(final String authority) {
+        Appboy.setAppboyEndpointProvider(
+                new IAppboyEndpointProvider() {
+                    @Override
+                    public Uri getApiEndpoint(Uri appboyEndpoint) {
+                        return appboyEndpoint.buildUpon()
+                                .authority(authority).build();
+                    }
+                }
+        );
     }
 }
