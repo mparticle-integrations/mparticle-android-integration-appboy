@@ -19,7 +19,7 @@ This repository contains the [Appboy](https://www.appboy.com/) integration for t
 
     ```groovy
     dependencies {
-        compile 'com.mparticle:android-appboy-kit:4+'
+        compile 'com.mparticle:android-appboy-kit:5+'
     }
     ```
 
