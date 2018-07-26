@@ -23,7 +23,7 @@ This repository contains the [Appboy](https://www.appboy.com/) integration for t
     }
     ```
 
-3. Follow the mParticle Android SDK [quick-start](https://github.com/mParticle/mparticle-android-sdk), then rebuild and launch your app, and verify that you see `"Appboy detected"` in the output of `adb logcat`.
+3. Follow the mParticle Android SDK [quick-start](https://github.com/mParticle/mparticle-android-sdk), then rebuild and launch your app, and verify that you see `"Appboy detected"` or `"AppboyKit detected."` in the output of `adb logcat`.
 4. Reference mParticle's integration docs below to enable the integration.
 
 ### Documentation
