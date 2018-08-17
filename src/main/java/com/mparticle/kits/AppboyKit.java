@@ -21,6 +21,7 @@ import com.mparticle.MParticle;
 import com.mparticle.MParticle.UserAttributes;
 import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.commerce.Product;
+import com.mparticle.identity.MParticleUser;
 import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
@@ -33,7 +34,7 @@ import java.util.Map;
 /**
  * mParticle client-side Appboy integration
  */
-public class AppboyKit extends KitIntegration implements KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener {
+public class AppboyKit extends KitIntegration implements KitIntegration.AttributeListener, KitIntegration.CommerceListener, KitIntegration.EventListener, KitIntegration.PushListener, KitIntegration.IdentityListener {
 
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
@@ -263,19 +264,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void setUserIdentity(MParticle.IdentityType identityType, String identity) {
-        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
-        if (MParticle.IdentityType.CustomerId.equals(identityType)) {
-            if (user == null || (user.getUserId() != null && !user.getUserId().equals(identity))) {
-                Appboy.getInstance(getContext()).changeUser(identity);
-                queueDataFlush();
-            }
-        } else if (MParticle.IdentityType.Email.equals(identityType)
-                && identity != null
-                && !identity.equals(getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null))) {
-            user.setEmail(identity);
-            queueDataFlush();
-            getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, identity).apply();
-        }
+
     }
 
     @Override
@@ -346,5 +335,58 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                     }
                 }
         );
+    }
+
+    @Override
+    public void onIdentifyCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onLoginCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onLogoutCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onModifyCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    private void updateUser(MParticleUser mParticleUser) {
+        String customerId = mParticleUser.getUserIdentities().get(MParticle.IdentityType.CustomerId);
+        String email = mParticleUser.getUserIdentities().get(MParticle.IdentityType.Email);
+        if (customerId != null) {
+            setCustomerId(customerId);
+        }
+        if (email != null) {
+            setEmail(email);
+        }
+    }
+
+    protected void setCustomerId(String customerId) {
+        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        if (user == null || (user.getUserId() != null && !user.getUserId().equals(customerId))) {
+            Appboy.getInstance(getContext()).changeUser(customerId);
+            queueDataFlush();
+        }
+    }
+
+    protected void setEmail(String email) {
+        if (!email.equals(getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null))) {
+            AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+            user.setEmail(email);
+            queueDataFlush();
+            getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply();
+        }
+    }
+
+    @Override
+    public void onUserIdentified(MParticleUser mParticleUser) {
+
     }
 }
