@@ -8,6 +8,12 @@ import android.support.annotation.Nullable;
 import android.test.mock.MockApplication;
 import android.test.mock.MockContext;
 
+import com.mparticle.MParticle;
+import com.mparticle.UserAttributeListener;
+import com.mparticle.commerce.Cart;
+import com.mparticle.consent.ConsentState;
+import com.mparticle.identity.MParticleUser;
+
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -16,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -104,6 +112,59 @@ public class AppboyKitTests {
             kit.onKitCreate(nullSettings, new MockContextApplication());
         } catch (Exception e) {}
         assertTrue(kit.calledAuthority[0] == null);
+    }
+
+    @Test
+    public void testOnModify() {
+        //make sure it doesn't crash if there is no email or customerId
+        Exception e = null;
+        try {
+            new AppboyKit().onModifyCompleted(new MockUser(new HashMap<MParticle.IdentityType, String>()), null);
+        }
+        catch (Exception ex) {
+            e = ex;
+        }
+        assertNull(e);
+        
+        for (int i = 0; i < 4; i++) {
+            final String[] values = new String[2];
+            String mockEmail = "mockEmail" + i;
+            String mockCustomerId = "12345" + i;
+
+            AppboyKit kit = new AppboyKit() {
+                @Override
+                protected void setCustomerId(String customerId) {
+                    values[0] = customerId;
+                }
+
+                @Override
+                protected void setEmail(String email) {
+                    if (values[0] == null) {
+                        fail("customerId should have been set first");
+                    }
+                    values[1] = email;
+                }
+            };
+
+            Map<MParticle.IdentityType, String> map = new HashMap<>();
+            map.put(MParticle.IdentityType.Email, mockEmail);
+            map.put(MParticle.IdentityType.Alias, "alias");
+            map.put(MParticle.IdentityType.Facebook, "facebook");
+            map.put(MParticle.IdentityType.Facebook, "fb");
+            map.put(MParticle.IdentityType.CustomerId, mockCustomerId);
+            switch (i) {
+                case 0:
+                    kit.onModifyCompleted(new MockUser(map), null);
+                case 1:
+                    kit.onIdentifyCompleted(new MockUser(map), null);
+                case 2:
+                    kit.onLoginCompleted(new MockUser(map), null);
+                case 3:
+                    kit.onLogoutCompleted(new MockUser(map), null);
+            }
+            assertEquals(mockCustomerId, values[0]);
+            assertEquals(mockEmail, values[1]);
+        }
     }
 
 
@@ -246,6 +307,79 @@ public class AppboyKitTests {
 
         @Override
         public void apply() {
+
+        }
+    }
+
+    class MockUser implements MParticleUser {
+        Map<MParticle.IdentityType, String> identities;
+
+        MockUser(Map<MParticle.IdentityType, String> identities) {
+            this.identities = identities;
+        }
+
+        @Override
+        public long getId() {
+            return 0;
+        }
+
+        @Override
+        public Cart getCart() {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getUserAttributes() {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getUserAttributes(UserAttributeListener userAttributeListener) {
+            return null;
+        }
+
+        @Override
+        public boolean setUserAttributes(Map<String, Object> map) {
+            return false;
+        }
+
+        @Override
+        public Map<MParticle.IdentityType, String> getUserIdentities() {
+            return identities;
+        }
+
+        @Override
+        public boolean setUserAttribute(String s, Object o) {
+            return false;
+        }
+
+        @Override
+        public boolean setUserAttributeList(String s, Object o) {
+            return false;
+        }
+
+        @Override
+        public boolean incrementUserAttribute(String s, int i) {
+            return false;
+        }
+
+        @Override
+        public boolean removeUserAttribute(String s) {
+            return false;
+        }
+
+        @Override
+        public boolean setUserTag(String s) {
+            return false;
+        }
+
+        @Override
+        public ConsentState getConsentState() {
+            return null;
+        }
+
+        @Override
+        public void setConsentState(ConsentState consentState) {
 
         }
     }
