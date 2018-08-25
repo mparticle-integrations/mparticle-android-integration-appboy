@@ -8,7 +8,7 @@ This repository contains the [Appboy](https://www.appboy.com/) integration for t
 
     ```
     repositories {
-        maven { url "http://appboy.github.io/appboy-android-sdk/sdk" }
+        maven { url "https://appboy.github.io/appboy-android-sdk/sdk" }
         //Appboy's library depends on the Google Support Library, which is now distributed via Maven
         maven { url "https://maven.google.com" }
         ...
