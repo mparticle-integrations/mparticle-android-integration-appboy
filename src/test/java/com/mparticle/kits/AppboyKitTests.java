@@ -5,8 +5,6 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
-import android.test.mock.MockApplication;
-import android.test.mock.MockContext;
 
 import com.mparticle.MParticle;
 import com.mparticle.UserAttributeListener;
@@ -183,7 +181,7 @@ public class AppboyKitTests {
         }
     }
 
-    class MockContextApplication extends MockApplication {
+    class MockContextApplication extends Application {
         @Override
         public Context getApplicationContext() {
             return this;
