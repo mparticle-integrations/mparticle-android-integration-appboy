@@ -7,7 +7,7 @@ import android.net.Uri;
 import android.os.Handler;
 
 import com.appboy.Appboy;
-import com.appboy.AppboyGcmReceiver;
+import com.appboy.AppboyFcmReceiver;
 import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.AppboyUser;
 import com.appboy.IAppboyEndpointProvider;
@@ -310,7 +310,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public void onPushMessageReceived(Context context, Intent pushIntent) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
-            new AppboyGcmReceiver().onReceive(context, pushIntent);
+            new AppboyFcmReceiver().onReceive(context, pushIntent);
         }
     }
 
