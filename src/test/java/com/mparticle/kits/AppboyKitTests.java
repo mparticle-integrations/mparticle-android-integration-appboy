@@ -380,6 +380,10 @@ public class AppboyKitTests {
         public void setConsentState(ConsentState consentState) {
 
         }
+
+        public boolean isLoggedIn() {
+            return false;
+        }
     }
 
 }
