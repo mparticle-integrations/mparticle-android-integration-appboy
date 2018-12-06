@@ -73,7 +73,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         dataFlushRunnable = new Runnable() {
             @Override
             public void run() {
-                if (MParticle.getInstance().getAppStateManager().isBackgrounded()) {
+                if (getKitManager().isBackgrounded()) {
                     Appboy.getInstance(getContext()).requestImmediateDataFlush();
                 }
             }
