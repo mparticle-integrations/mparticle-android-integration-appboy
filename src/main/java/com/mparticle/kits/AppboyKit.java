@@ -199,7 +199,20 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             if (key.startsWith("$")) {
                 key = key.substring(1);
             }
-            user.setCustomUserAttribute(key, value);
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                user.setCustomUserAttribute(key, Boolean.parseBoolean(value));
+            } else {
+                try {
+                    double doubleValue = Double.parseDouble(value);
+                    if ((doubleValue % 1) == 0) {
+                        user.setCustomUserAttribute(key, Integer.parseInt(value));
+                    } else {
+                        user.setCustomUserAttribute(key, doubleValue);
+                    }
+                } catch (NumberFormatException nfe) {
+                    user.setCustomUserAttribute(key, value);
+                }
+            }
         }
         queueDataFlush();
     }
@@ -387,6 +400,5 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void onUserIdentified(MParticleUser mParticleUser) {
-
     }
 }
