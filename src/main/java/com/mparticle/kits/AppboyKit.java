@@ -400,5 +400,6 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void onUserIdentified(MParticleUser mParticleUser) {
+        
     }
 }
