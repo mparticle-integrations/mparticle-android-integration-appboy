@@ -11,6 +11,7 @@ import com.mparticle.UserAttributeListener;
 import com.mparticle.commerce.Cart;
 import com.mparticle.consent.ConsentState;
 import com.mparticle.identity.MParticleUser;
+import com.mparticle.mock.AbstractMParticleUser;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -309,7 +310,7 @@ public class AppboyKitTests {
         }
     }
 
-    class MockUser implements MParticleUser {
+    class MockUser extends AbstractMParticleUser {
         Map<MParticle.IdentityType, String> identities;
 
         MockUser(Map<MParticle.IdentityType, String> identities) {
@@ -317,69 +318,10 @@ public class AppboyKitTests {
         }
 
         @Override
-        public long getId() {
-            return 0;
-        }
-
-        @Override
-        public Cart getCart() {
-            return null;
-        }
-
-        @Override
-        public Map<String, Object> getUserAttributes() {
-            return null;
-        }
-
-        @Override
-        public Map<String, Object> getUserAttributes(UserAttributeListener userAttributeListener) {
-            return null;
-        }
-
-        @Override
-        public boolean setUserAttributes(Map<String, Object> map) {
-            return false;
-        }
-
-        @Override
         public Map<MParticle.IdentityType, String> getUserIdentities() {
             return identities;
         }
 
-        @Override
-        public boolean setUserAttribute(String s, Object o) {
-            return false;
-        }
-
-        @Override
-        public boolean setUserAttributeList(String s, Object o) {
-            return false;
-        }
-
-        @Override
-        public boolean incrementUserAttribute(String s, int i) {
-            return false;
-        }
-
-        @Override
-        public boolean removeUserAttribute(String s) {
-            return false;
-        }
-
-        @Override
-        public boolean setUserTag(String s) {
-            return false;
-        }
-
-        @Override
-        public ConsentState getConsentState() {
-            return null;
-        }
-
-        @Override
-        public void setConsentState(ConsentState consentState) {
-
-        }
 
         public boolean isLoggedIn() {
             return false;
