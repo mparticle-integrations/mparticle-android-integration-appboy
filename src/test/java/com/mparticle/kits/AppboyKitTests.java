@@ -50,7 +50,7 @@ public class AppboyKitTests {
             KitIntegration kit = getKit();
             Map settings = new HashMap<>();
             settings.put("fake setting", "fake");
-            kit.onKitCreate(settings, Mockito.mock(Context.class));
+            kit.onKitCreate(settings, new MockContextApplication());
         }catch (Exception ex) {
             e = ex;
         }
