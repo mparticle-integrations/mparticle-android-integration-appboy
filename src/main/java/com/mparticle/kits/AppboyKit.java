@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.appboy.Appboy;
 import com.appboy.AppboyFcmReceiver;
@@ -13,6 +15,7 @@ import com.appboy.AppboyUser;
 import com.appboy.IAppboyEndpointProvider;
 import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
+import com.appboy.enums.Month;
 import com.appboy.enums.SdkFlavor;
 import com.appboy.models.outgoing.AppboyProperties;
 import com.appboy.push.AppboyNotificationUtils;
@@ -25,6 +28,7 @@ import com.mparticle.identity.MParticleUser;
 import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -195,6 +199,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             user.setLastName(value);
         } else if (UserAttributes.MOBILE_NUMBER.equals(key)) {
             user.setPhoneNumber(value);
+        } else if (UserAttributes.AGE.equals(key)) {
+            Calendar calendar = getCalendarMinusYears(value);
+            if (calendar != null) {
+                user.setDateOfBirth(calendar.get(Calendar.YEAR), Month.JANUARY, 1);
+            } else {
+                Logger.error("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value);
+            }
         } else {
             if (key.startsWith("$")) {
                 key = key.substring(1);
@@ -401,5 +412,32 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public void onUserIdentified(MParticleUser mParticleUser) {
         
+    }
+
+    @Nullable
+    Calendar getCalendarMinusYears(String yearsString) {
+        try {
+            int years = Integer.parseInt(yearsString);
+            return getCalendarMinusYears(years);
+        } catch (NumberFormatException ignored) {
+            try {
+                double years = Double.parseDouble(yearsString);
+                return getCalendarMinusYears((int)years);
+            } catch (NumberFormatException ignoredToo) {
+
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    Calendar getCalendarMinusYears(int years) {
+        if (years >= 0) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - years);
+            return calendar;
+        } else {
+            return null;
+        }
     }
 }

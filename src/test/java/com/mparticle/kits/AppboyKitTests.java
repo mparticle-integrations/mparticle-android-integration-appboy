@@ -6,16 +6,27 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
 
+import com.appboy.Appboy;
+import com.appboy.AppboyUser;
+import com.appboy.MockAppboyUser;
+import com.appboy.enums.Month;
 import com.mparticle.MParticle;
 import com.mparticle.UserAttributeListener;
 import com.mparticle.commerce.Cart;
 import com.mparticle.consent.ConsentState;
+import com.mparticle.identity.IdentityApi;
 import com.mparticle.identity.MParticleUser;
+import com.mparticle.internal.ReportingManager;
 import com.mparticle.mock.AbstractMParticleUser;
+import com.mparticle.mock.MockCoreCallbacks;
+import com.mparticle.mock.MockKitManagerImpl;
+import com.mparticle.mock.MockMParticle;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +42,13 @@ public class AppboyKitTests {
 
     private KitIntegration getKit() {
         return new AppboyKit();
+    }
+
+    @Before
+    public void setup() {
+        MParticle.setInstance(Mockito.mock(MParticle.class));
+        Mockito.when(MParticle.getInstance().Identity()).thenReturn(Mockito.mock(IdentityApi.class));
+
     }
 
     @Test
@@ -166,10 +184,51 @@ public class AppboyKitTests {
         }
     }
 
+    @Test
+    public void testAgeToDob() {
+        AppboyKit kit = new MockAppboyKit();
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
 
+        Calendar calendar = kit.getCalendarMinusYears("5");
+        assertEquals(currentYear - 5, calendar.get(Calendar.YEAR));
+
+        calendar = kit.getCalendarMinusYears(22);
+        assertEquals(currentYear - 22, calendar.get(Calendar.YEAR));
+
+//        round down doubles
+        calendar = kit.getCalendarMinusYears("5.001");
+        assertEquals(currentYear - 5, calendar.get(Calendar.YEAR));
+
+        calendar = kit.getCalendarMinusYears("5.9");
+        assertEquals(currentYear - 5, calendar.get(Calendar.YEAR));
+
+        //invalid ages (negative, non numeric), don't get set
+        assertNull(kit.getCalendarMinusYears("asdv"));
+        assertNull(kit.getCalendarMinusYears(-1));
+    }
+
+    @Test
+    public void testSetUserAttributeAge() {
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        AppboyKit kit = new MockAppboyKit();
+        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+
+        assertEquals(-1, currentUser.dobDay);
+        assertEquals(-1, currentUser.dobYear);
+        assertNull(currentUser.dobMonth);
+
+        kit.setUserAttribute(MParticle.UserAttributes.AGE, "100");
+        assertEquals(currentYear - 100, currentUser.dobYear);
+        assertEquals(1, currentUser.dobDay);
+        assertEquals(Month.JANUARY, currentUser.dobMonth);
+    }
 
     class MockAppboyKit extends AppboyKit {
         final String[] calledAuthority = new String[1];
+
+        MockAppboyKit() {
+            setKitManager(new MockKitManagerImpl(Mockito.mock(Context.class), Mockito.mock(ReportingManager.class), new MockCoreCallbacks()));
+        }
 
         @Override
         protected void setAuthority(String authority) {
