@@ -23,6 +23,5 @@ repositories {
 }
 
 dependencies {
-    testImplementation project(':testutils')
     api 'com.appboy:android-sdk-ui:3.5.0'
 }
