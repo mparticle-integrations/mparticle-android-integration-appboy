@@ -83,7 +83,6 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             }
         };
         queueDataFlush();
-        ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
         return null;
     }
 
