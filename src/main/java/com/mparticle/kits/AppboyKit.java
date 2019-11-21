@@ -52,6 +52,8 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
     private boolean forwardScreenViews = false;
+    
+    public static boolean setDefaultAppboyLifecycleCallbackListener = true;
 
     @Override
     public String getName() {
@@ -83,6 +85,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             }
         };
         queueDataFlush();
+        if (setDefaultAppboyLifecycleCallbackListener) {
+            ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
+        }
         return null;
     }
 
