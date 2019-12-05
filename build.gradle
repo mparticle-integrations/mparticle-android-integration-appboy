@@ -27,5 +27,5 @@ repositories {
 }
 
 dependencies {
-    api 'com.appboy:android-sdk-ui:3.8.0'
+    api 'com.appboy:android-sdk-ui:4.0.1'
 }
