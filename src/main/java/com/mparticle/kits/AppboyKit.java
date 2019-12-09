@@ -42,8 +42,11 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
+    static final String USER_IDENTIFICATION_TYPE = "userIdentificationType";
 
     static final String HOST = "host";
+    boolean isMpidIdentityType = false;
+    MParticle.IdentityType identityType;
 
     public static final String PUSH_ENABLED = "push_enabled";
     private static final String PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes";
@@ -52,7 +55,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
     private boolean forwardScreenViews = false;
-    
+
     public static boolean setDefaultAppboyLifecycleCallbackListener = true;
 
     @Override
@@ -88,7 +91,19 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         if (setDefaultAppboyLifecycleCallbackListener) {
             ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
         }
+        setIdentityType(settings);
         return null;
+    }
+
+    void setIdentityType(Map<String, String> settings) {
+        String userIdentificationType = settings.get(USER_IDENTIFICATION_TYPE);
+        if (!KitUtils.isEmpty(userIdentificationType)) {
+            if (userIdentificationType.equals("MPID")) {
+                isMpidIdentityType = true;
+            } else {
+                identityType = MParticle.IdentityType.valueOf(userIdentificationType);
+            }
+        }
     }
 
     @Override
@@ -385,18 +400,28 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         updateUser(mParticleUser);
     }
 
-    private void updateUser(MParticleUser mParticleUser) {
-        String customerId = mParticleUser.getUserIdentities().get(MParticle.IdentityType.CustomerId);
+    private void updateUser(@NonNull MParticleUser mParticleUser) {
+        String identity = getIdentity(isMpidIdentityType, identityType, mParticleUser);
         String email = mParticleUser.getUserIdentities().get(MParticle.IdentityType.Email);
-        if (customerId != null) {
-            setCustomerId(customerId);
+        if (identity != null) {
+            setId(identity);
         }
         if (email != null) {
             setEmail(email);
         }
     }
 
-    protected void setCustomerId(String customerId) {
+    String getIdentity(boolean isMpidIdentityType, @Nullable MParticle.IdentityType identityType, @NonNull MParticleUser mParticleUser) {
+        String identity = null;
+        if (isMpidIdentityType) {
+            identity = String.valueOf(mParticleUser.getId());
+        } else if (identityType != null) {
+            identity = mParticleUser.getUserIdentities().get(identityType);
+        }
+        return identity;
+    }
+
+    protected void setId(String customerId) {
         AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
         if (user == null || (user.getUserId() != null && !user.getUserId().equals(customerId))) {
             Appboy.getInstance(getContext()).changeUser(customerId);

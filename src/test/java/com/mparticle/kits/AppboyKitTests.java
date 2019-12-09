@@ -68,18 +68,21 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class AppboyKitTests {
+    Random random = new Random();
 
-    private KitIntegration getKit() {
+    private AppboyKit getKit() {
         return new AppboyKit();
     }
 
@@ -189,7 +192,7 @@ public class AppboyKitTests {
 
             AppboyKit kit = new AppboyKit() {
                 @Override
-                protected void setCustomerId(String customerId) {
+                protected void setId(String customerId) {
                     values[0] = customerId;
                 }
 
@@ -201,6 +204,8 @@ public class AppboyKitTests {
                     values[1] = email;
                 }
             };
+
+            kit.identityType = MParticle.IdentityType.CustomerId;
 
             Map<MParticle.IdentityType, String> map = new HashMap<>();
             map.put(MParticle.IdentityType.Email, mockEmail);
@@ -260,6 +265,51 @@ public class AppboyKitTests {
         assertEquals(currentYear - 100, currentUser.dobYear);
         assertEquals(1, currentUser.dobDay);
         assertEquals(Month.JANUARY, currentUser.dobMonth);
+    }
+
+    @Test
+    public void setIdentityType() {
+        String[] possibleValues = new String[]{"Other","CustomerId", "Facebook",
+                "Twitter", "Google", "Microsoft",
+                "Yahoo", "Email", "Alias"};
+        String mpid = "MPID";
+
+        for (String val: possibleValues) {
+            AppboyKit kit = getKit();
+            Map<String, String> settings = new HashMap<>();
+            settings.put(AppboyKit.USER_IDENTIFICATION_TYPE, val);
+            kit.setIdentityType(settings);
+            assertNotNull(kit.identityType);
+            assertEquals(val.toLowerCase(), kit.identityType.name().toLowerCase());
+            assertFalse(kit.isMpidIdentityType);
+        }
+
+        Map<String, String> settings = new HashMap<>();
+        settings.put(AppboyKit.USER_IDENTIFICATION_TYPE, mpid);
+        AppboyKit kit = getKit();
+        kit.setIdentityType(settings);
+        assertNull(kit.identityType);
+        assertTrue(kit.isMpidIdentityType);
+
+    }
+
+    @Test
+    public void setId() {
+        Map<MParticle.IdentityType, String> userIdentities = new HashMap<>();
+        MParticleUser user = Mockito.mock(MParticleUser.class);
+        Mockito.when(user.getUserIdentities()).thenReturn(userIdentities);
+        Long mockId = random.nextLong();
+        Mockito.when(user.getId()).thenReturn(mockId);
+
+        assertEquals(String.valueOf(mockId), getKit().getIdentity(true, null, user));
+
+        for (MParticle.IdentityType identityType: MParticle.IdentityType.values()) {
+            String identityValue = String.valueOf(random.nextLong());
+            userIdentities.put(identityType, identityValue);
+            assertEquals(identityValue, getKit().getIdentity(false, identityType, user));
+        }
+
+        assertNull(getKit().getIdentity(false, null, null));
     }
 
     class MockAppboyKit extends AppboyKit {
