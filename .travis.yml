@@ -20,7 +20,7 @@ script: gradle clean test
 
 before_install:
   - yes | sdkmanager "platforms;android-28"
-  - wget http://services.gradle.org/distributions/gradle-5.3-bin.zip
+  - wget https://services.gradle.org/distributions/gradle-5.3-bin.zip
   - unzip -qq gradle-5.3-bin.zip
   - export GRADLE_HOME=$PWD/gradle-5.3
   - export PATH=$GRADLE_HOME/bin:$PATH
