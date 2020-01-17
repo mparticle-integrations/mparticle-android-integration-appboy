@@ -74,6 +74,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static com.mparticle.internal.Logger.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -267,6 +268,50 @@ public class AppboyKitTests {
         assertEquals(currentYear - 100, currentUser.dobYear);
         assertEquals(1, currentUser.dobDay);
         assertEquals(Month.JANUARY, currentUser.dobMonth);
+    }
+
+    @Test
+    public void testSetUserDoB() {
+        AppboyKit kit = new MockAppboyKit();
+        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+
+        final String[] errorMessage = new String[1];
+        setLogHandler(new DefaultLogHandler() {
+            @Override
+            public void log(MParticle.LogLevel priority, Throwable error, String messages) {
+                if (priority == MParticle.LogLevel.ERROR) {
+                    errorMessage[0] = messages;
+                }
+            }
+        });
+
+        //valid
+        kit.setUserAttribute("dob", "1999-11-05");
+        assertEquals(1999, currentUser.dobYear);
+        assertEquals(05, currentUser.dobDay);
+        assertEquals(Month.NOVEMBER, currentUser.dobMonth);
+        assertNull(errorMessage[0]);
+
+        //future
+        kit.setUserAttribute("dob", "2999-2-15");
+        assertEquals(2999, currentUser.dobYear);
+        assertEquals(15, currentUser.dobDay);
+        assertEquals(Month.FEBRUARY, currentUser.dobMonth);
+        assertNull(errorMessage[0]);
+
+
+        //bad formate (shouldn't crash, but should message)
+        Exception ex = null;
+        try {
+            kit.setUserAttribute("dob", "2kjb.21h045");
+            assertEquals(2999, currentUser.dobYear);
+            assertEquals(15, currentUser.dobDay);
+            assertEquals(Month.FEBRUARY, currentUser.dobMonth);
+            assertNotNull(errorMessage[0]);
+        } catch (Exception e) {
+            ex = e;
+        }
+        assertNull(ex);
     }
 
     @Test
@@ -1277,7 +1322,7 @@ public class AppboyKitTests {
                     String key = iterator.next();
                     map.put(Integer.parseInt(key), json.getInt(key) == 1);
                 }catch (JSONException jse){
-                    Logger.error("Issue while parsing kit configuration: " + jse.getMessage());
+                    error("Issue while parsing kit configuration: " + jse.getMessage());
                 }
             }
             return map;

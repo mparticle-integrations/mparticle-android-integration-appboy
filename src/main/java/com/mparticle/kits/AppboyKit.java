@@ -28,6 +28,9 @@ import com.mparticle.identity.MParticleUser;
 import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -239,6 +242,20 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                 user.setDateOfBirth(calendar.get(Calendar.YEAR), Month.JANUARY, 1);
             } else {
                 Logger.error("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value);
+            }
+        } else if ("dob".equals(key)) {
+            // Expected Date Format @"yyyy'-'MM'-'dd"
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(dateFormat.parse(value));
+                int year = calendar.get(Calendar.YEAR);
+                int month = calendar.get(Calendar.MONTH);
+                Month monthEnumValue = Month.getMonth(month);
+                int day = calendar.get(Calendar.DAY_OF_MONTH);
+                user.setDateOfBirth(year, monthEnumValue, day);
+            } catch (Exception e) {
+                Logger.error("unable to set DateOfBirth for \"dob\" = " + value + ". Exception: " + e.getMessage());
             }
         } else {
             if (key.startsWith("$")) {
