@@ -3,6 +3,7 @@ package com.appboy;
 import android.content.Context;
 
 import com.appboy.configuration.AppboyConfig;
+import com.appboy.models.outgoing.AppboyProperties;
 
 public class Appboy {
     private static Appboy instance;
@@ -24,5 +25,9 @@ public class Appboy {
             currentUser = new MockAppboyUser();
         }
         return currentUser;
+    }
+
+    public void logCustomEvent(String key, AppboyProperties appboyProperties) {
+
     }
 }

@@ -37,6 +37,7 @@ import com.appboy.Appboy;
 import com.appboy.AppboyUser;
 import com.appboy.MockAppboyUser;
 import com.appboy.enums.Month;
+import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.UserAttributeListener;
 import com.mparticle.commerce.Cart;
@@ -67,6 +68,7 @@ import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -355,6 +357,47 @@ public class AppboyKitTests {
         }
 
         assertNull(getKit().getIdentity(false, null, null));
+    }
+
+    @Test
+    public void addRemoveAttributeFromEventTest() {
+        AppboyKit kit = new MockAppboyKit();
+        MockAppboyUser currentUser = (MockAppboyUser) Appboy.getInstance(null).getCurrentUser();
+
+        kit.setConfiguration(new MockKitConfiguration() {
+            @Override
+            public Map<Integer, String> getEventAttributesAddToUser() {
+                Map<Integer, String> map = new HashMap();
+                map.put(KitUtils.hashForFiltering(MParticle.EventType.Navigation + "Navigation Event" + "key1"), "output");
+                return map;
+            }
+
+            @Override
+            public Map<Integer, String> getEventAttributesRemoveFromUser() {
+                Map<Integer, String> map = new HashMap();
+                map.put(KitUtils.hashForFiltering(MParticle.EventType.Location + "location event" + "key1"), "output");
+                return map;
+            }
+        });
+
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("key1", "value1");
+
+        kit.logEvent(new MPEvent.Builder("Navigation Event", MParticle.EventType.Navigation)
+                .customAttributes(customAttributes)
+                .build());
+
+        List<String> attributes = currentUser.getCustomAttributeArray().get("output");
+        assertEquals(1, attributes.size());
+        assertEquals("value1", attributes.get(0));
+
+
+        kit.logEvent(new MPEvent.Builder("location event", MParticle.EventType.Location)
+                .customAttributes(customAttributes)
+                .build());
+
+        attributes = currentUser.getCustomAttributeArray().get("output");
+        assertEquals(0, attributes.size());
     }
 
     class MockAppboyKit extends AppboyKit {

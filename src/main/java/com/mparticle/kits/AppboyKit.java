@@ -131,13 +131,28 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public List<ReportingMessage> logEvent(MPEvent event) {
-        if (event.getInfo() == null) {
+        if (event.getCustomAttributes() == null) {
             Appboy.getInstance(getContext()).logCustomEvent(event.getEventName());
         } else {
             AppboyProperties properties = new AppboyProperties();
-            for (Map.Entry<String, String> entry : event.getInfo().entrySet()) {
+            AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+            for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
                 properties.addProperty(entry.getKey(), entry.getValue());
+                Integer hashedKey = KitUtils.hashForFiltering(event.getEventType().toString() + event.getEventName() + entry.getKey());
+                Map<Integer, String> attributeMap = getConfiguration().getEventAttributesAddToUser();
+                if (attributeMap.containsKey(hashedKey)) {
+                    user.addToCustomAttributeArray(attributeMap.get(hashedKey), entry.getValue());
+                }
+                attributeMap = getConfiguration().getEventAttributesRemoveFromUser();
+                if (attributeMap.containsKey(hashedKey)) {
+                    user.removeFromCustomAttributeArray(attributeMap.get(hashedKey), entry.getValue());
+                }
+                attributeMap = getConfiguration().getEventAttributesRemoveFromUser();
+                if (attributeMap.containsKey(hashedKey)) {
+                    user.setCustomUserAttribute(attributeMap.get(hashedKey), entry.getValue());
+                }
             }
+
             Appboy.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
         }
         queueDataFlush();
