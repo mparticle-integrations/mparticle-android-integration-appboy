@@ -23,7 +23,6 @@ android {
 
 repositories {
     maven { url "http://appboy.github.io/appboy-android-sdk/sdk" }
-    maven { url "https://maven.google.com" }
 }
 
 dependencies {
