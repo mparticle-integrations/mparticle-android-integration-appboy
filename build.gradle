@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.appboy:android-sdk-ui:4.0.1'
+    api 'com.appboy:android-sdk-ui:6.0.0'
     testImplementation  files('libs/java-json.jar')
 
 }
