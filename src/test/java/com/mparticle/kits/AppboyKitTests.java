@@ -355,4 +355,95 @@ public class AppboyKitTests {
         attributes = currentUser.getCustomAttributeArray().get("output");
         assertEquals(0, attributes.size());
     }
+
+    @Test
+    public void testPurchaseCurrency() {
+        AppboyKit kit = new MockAppboyKit();
+        Product product = new Product.Builder("product name","sku1",4.5)
+                .build();
+        CommerceEvent commerceEvent = new CommerceEvent.Builder(Product.CHECKOUT, product)
+                .currency("Moon Dollars")
+                .build();
+
+        kit.logTransaction(commerceEvent, product);
+
+        Appboy appboy = Appboy.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = appboy.getPurchases();
+
+        assertEquals(1, purchases.size());
+        AppboyPurchase purchase = purchases.get(0);
+
+        assertEquals("Moon Dollars", purchase.getCurrency());
+        assertNull(purchase.getPurchaseProperties().getProperties().get(ATT_ACTION_CURRENCY_CODE));
+    }
+
+    @Test
+    public void testPurchaseDefaultCurrency() {
+        AppboyKit kit = new MockAppboyKit();
+        Product product = new Product.Builder("product name","sku1",4.5)
+                .build();
+        CommerceEvent commerceEvent = new CommerceEvent.Builder(Product.CHECKOUT, product)
+                .build();
+
+        kit.logTransaction(commerceEvent, product);
+
+        Appboy appboy = Appboy.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = appboy.getPurchases();
+
+        assertEquals(1, purchases.size());
+        AppboyPurchase purchase = purchases.get(0);
+
+        assertEquals(CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE, purchase.getCurrency());
+        assertNull(purchase.getPurchaseProperties().getProperties().get(ATT_ACTION_CURRENCY_CODE));
+    }
+
+    @Test
+    public void testPurchase() {
+        AppboyKit kit = new MockAppboyKit();
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("key1", "value1");
+        customAttributes.put("key #2", "value #3");
+        TransactionAttributes transactionAttributes = new TransactionAttributes("the id")
+                .setTax(100.0)
+                .setShipping(12.0)
+                .setRevenue(99.0)
+                .setCouponCode("coupon code")
+                .setAffiliation("the affiliation");
+        Product product = new Product.Builder("product name","sku1",4.5)
+                .quantity(5.0)
+                .build();
+        CommerceEvent commerceEvent = new CommerceEvent.Builder(Product.CHECKOUT, product)
+                .currency("Moon Dollars")
+                .productListName("product list name")
+                .productListSource("the source")
+                .customAttributes(customAttributes)
+                .transactionAttributes(transactionAttributes)
+                .build();
+
+        kit.logTransaction(commerceEvent, product);
+
+        Appboy appboy = Appboy.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = appboy.getPurchases();
+
+        assertEquals(1, purchases.size());
+        AppboyPurchase purchase = purchases.get(0);
+
+        assertEquals("Moon Dollars", purchase.getCurrency());
+        assertEquals(5.0, purchase.getQuantity(), 0.01);
+        assertEquals("sku1", purchase.getSku());
+        assertEquals(new BigDecimal(4.5), purchase.getUnitPrice());
+        assertNotNull(purchase.getPurchaseProperties());
+
+        Map<String, Object> properties = purchase.getPurchaseProperties().getProperties();
+        assertEquals(properties.remove(ATT_SHIPPING), 12.0);
+        assertEquals(properties.remove(ATT_ACTION_PRODUCT_LIST_SOURCE), "the source");
+        assertEquals(properties.remove(ATT_TAX), 100.0);
+        assertEquals(properties.remove(ATT_TOTAL), 99.0);
+        assertEquals(properties.remove(ATT_ACTION_PRODUCT_ACTION_LIST), "product list name");
+        assertEquals(properties.remove(ATT_PRODUCT_COUPON_CODE), "coupon code");
+        assertEquals(properties.remove(ATT_TRANSACTION_ID), "the id");
+        assertEquals(properties.remove(ATT_AFFILIATION), "the affiliation");
+
+        assertEquals(0, properties.size());
+    }
 }

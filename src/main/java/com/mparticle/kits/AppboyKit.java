@@ -292,7 +292,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         return true;
     }
 
-    void queueDataFlush() {
+    protected void queueDataFlush() {
         dataFlushHandler.removeCallbacks(dataFlushRunnable);
         dataFlushHandler.postDelayed(dataFlushRunnable, FLUSH_DELAY);
     }
@@ -352,22 +352,57 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         return null;
     }
 
-    private void logTransaction(CommerceEvent event, Product product) {
-        AppboyProperties purchaseProperties = new AppboyProperties();
-        Map<String, String> eventAttributes = new HashMap<String, String>();
-        CommerceEventUtils.extractActionAttributes(event, eventAttributes);
+    void logTransaction(CommerceEvent event, Product product) {
+        final AppboyProperties purchaseProperties = new AppboyProperties();
+        final String[] currency = new String[1];
+        CommerceEventUtils.OnAttributeExtracted onAttributeExtracted = new CommerceEventUtils.OnAttributeExtracted() {
 
-        String currency = eventAttributes.get(CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE);
-        if (KitUtils.isEmpty(currency)) {
-            currency = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE;
-        }
-        eventAttributes.remove(CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE);
-        for (Map.Entry<String, String> entry : eventAttributes.entrySet()) {
-            purchaseProperties.addProperty(entry.getKey(), entry.getValue());
+            @Override
+            public void onAttributeExtracted(String key, String value) {
+                if (!checkCurrency(key, value)) {
+                    purchaseProperties.addProperty(key, value);
+                }
+            }
+
+            @Override
+            public void onAttributeExtracted(String key, double value) {
+                if (!checkCurrency(key, value)) {
+                    purchaseProperties.addProperty(key, value);
+                }
+            }
+
+            @Override
+            public void onAttributeExtracted(String key, int value) {
+                purchaseProperties.addProperty(key, value);
+            }
+
+            @Override
+            public void onAttributeExtracted(Map<String, String> attributes) {
+                for (Map.Entry<String, String> entry: attributes.entrySet()) {
+                    if (!checkCurrency(entry.getKey(), entry.getValue())) {
+                        purchaseProperties.addProperty(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+
+            private boolean checkCurrency(String key, Object value) {
+                if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE.equals(key)) {
+                    currency[0] = value != null ? value.toString(): null;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+        CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted);
+
+        String currencyValue = currency[0];
+        if (KitUtils.isEmpty(currencyValue)) {
+            currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE;
         }
         Appboy.getInstance(getContext()).logPurchase(
                 product.getSku(),
-                currency,
+                currencyValue,
                 new BigDecimal(product.getUnitPrice()),
                 (int) product.getQuantity(),
                 purchaseProperties
