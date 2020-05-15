@@ -28,11 +28,8 @@ import com.mparticle.identity.MParticleUser;
 import com.mparticle.internal.Logger;
 
 import java.math.BigDecimal;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +43,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
     static final String USER_IDENTIFICATION_TYPE = "userIdentificationType";
+    static final String ENABLE_TYPE_DETECTION = "enableTypeDetection";
 
     static final String HOST = "host";
     boolean isMpidIdentityType = false;
@@ -58,6 +56,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
     private boolean forwardScreenViews = false;
+    boolean enableTypeDetection = false;
 
     public static boolean setDefaultAppboyLifecycleCallbackListener = true;
 
@@ -77,6 +76,15 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         String authority = settings.get(HOST);
         if (!KitUtils.isEmpty(authority)) {
             setAuthority(authority);
+        }
+
+        String enableDetectionType = settings.get(ENABLE_TYPE_DETECTION);
+        if (!KitUtils.isEmpty(enableDetectionType)) {
+            try {
+                this.enableTypeDetection = Boolean.parseBoolean(enableDetectionType);
+            } catch (Exception e) {
+                Logger.warning("Appboy, unable to parse \"enableDetectionType\"");
+            }
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
@@ -136,8 +144,10 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         } else {
             AppboyProperties properties = new AppboyProperties();
             AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+            AppboyPropertiesSetter appboyPropertiesSetter = new AppboyPropertiesSetter(properties, enableTypeDetection);
+            UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
             for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
-                properties.addProperty(entry.getKey(), entry.getValue());
+                appboyPropertiesSetter.parseValue(entry.getKey(), entry.getValue());
                 Integer hashedKey = KitUtils.hashForFiltering(event.getEventType().toString() + event.getEventName() + entry.getKey());
                 Map<Integer, String> attributeMap = getConfiguration().getEventAttributesAddToUser();
                 if (attributeMap.containsKey(hashedKey)) {
@@ -149,10 +159,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                 }
                 attributeMap = getConfiguration().getEventAttributesRemoveFromUser();
                 if (attributeMap.containsKey(hashedKey)) {
-                    user.setCustomUserAttribute(attributeMap.get(hashedKey), entry.getValue());
+                    userAttributeSetter.parseValue(attributeMap.get(hashedKey), entry.getValue());
                 }
             }
-
             Appboy.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
         }
         queueDataFlush();
@@ -168,8 +177,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                 Appboy.getInstance(getContext()).logCustomEvent(screenName);
             } else {
                 AppboyProperties properties = new AppboyProperties();
+                StringTypeParser propertyParser = new AppboyPropertiesSetter(properties, enableTypeDetection);
                 for (Map.Entry<String, String> entry : screenAttributes.entrySet()) {
-                    properties.addProperty(entry.getKey(), entry.getValue());
+                    propertyParser.parseValue(entry.getKey(), entry.getValue());
                 }
                 Appboy.getInstance(getContext()).logCustomEvent(screenName, properties);
             }
@@ -220,6 +230,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public void setUserAttribute(String key, String value) {
         AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
         if (UserAttributes.CITY.equals(key)) {
             user.setHomeCity(value);
         } else if (UserAttributes.COUNTRY.equals(key)) {
@@ -261,20 +272,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             if (key.startsWith("$")) {
                 key = key.substring(1);
             }
-            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-                user.setCustomUserAttribute(key, Boolean.parseBoolean(value));
-            } else {
-                try {
-                    double doubleValue = Double.parseDouble(value);
-                    if ((doubleValue % 1) == 0) {
-                        user.setCustomUserAttribute(key, Integer.parseInt(value));
-                    } else {
-                        user.setCustomUserAttribute(key, doubleValue);
-                    }
-                } catch (NumberFormatException nfe) {
-                    user.setCustomUserAttribute(key, value);
-                }
-            }
+            userAttributeSetter.parseValue(key, value);
         }
         queueDataFlush();
     }
@@ -355,12 +353,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     void logTransaction(CommerceEvent event, Product product) {
         final AppboyProperties purchaseProperties = new AppboyProperties();
         final String[] currency = new String[1];
+        final StringTypeParser commerceTypeParser = new AppboyPropertiesSetter(purchaseProperties, enableTypeDetection);
         CommerceEventUtils.OnAttributeExtracted onAttributeExtracted = new CommerceEventUtils.OnAttributeExtracted() {
 
             @Override
             public void onAttributeExtracted(String key, String value) {
                 if (!checkCurrency(key, value)) {
-                    purchaseProperties.addProperty(key, value);
+                    commerceTypeParser.parseValue(key, value);
                 }
             }
 
@@ -380,7 +379,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             public void onAttributeExtracted(Map<String, String> attributes) {
                 for (Map.Entry<String, String> entry: attributes.entrySet()) {
                     if (!checkCurrency(entry.getKey(), entry.getValue())) {
-                        purchaseProperties.addProperty(entry.getKey(), entry.getValue());
+                        commerceTypeParser.parseValue(entry.getKey(), entry.getValue());
                     }
                 }
             }
@@ -510,6 +509,23 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         
     }
 
+    void addToProperties(AppboyProperties properties, String key, String value) {
+        try {
+            if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+                properties.addProperty(key, Boolean.parseBoolean(value));
+            } else {
+                double doubleValue = Double.parseDouble(value);
+                if ((doubleValue % 1) == 0) {
+                    properties.addProperty(key, Integer.parseInt(value));
+                } else {
+                    properties.addProperty(key, doubleValue);
+                }
+            }
+        } catch (Exception e) {
+            properties.addProperty(key, value);
+        }
+    }
+
     @Nullable
     Calendar getCalendarMinusYears(String yearsString) {
         try {
@@ -534,6 +550,97 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             return calendar;
         } else {
             return null;
+        }
+    }
+
+    abstract class StringTypeParser {
+        boolean enableTypeDetection;
+
+        StringTypeParser(boolean enableTypeDetection) {
+            this.enableTypeDetection = enableTypeDetection;
+        }
+
+        void parseValue(String key, String value) {
+            if (!enableTypeDetection) {
+                toString(key, value);
+                return;
+            }
+            if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+                toBoolean(key, Boolean.parseBoolean(value));
+            } else {
+                try {
+                    double doubleValue = Double.parseDouble(value);
+                    if ((doubleValue % 1) == 0) {
+                        toInt(key, Integer.parseInt(value));
+                    } else {
+                        toDouble(key, doubleValue);
+                    }
+                } catch (NumberFormatException nfe) {
+                    toString(key, value);
+                }
+            }
+        }
+        abstract void toInt(String key, int value);
+        abstract void toDouble(String key, double value);
+        abstract void toBoolean(String key, boolean value);
+        abstract void toString(String key, String value);
+    }
+
+    class AppboyPropertiesSetter extends StringTypeParser {
+        AppboyProperties properties;
+
+        AppboyPropertiesSetter(AppboyProperties properties, boolean enableTypeDetection) {
+            super(enableTypeDetection);
+            this.properties = properties;
+        }
+
+        @Override
+        void toInt(String key, int value) {
+            properties.addProperty(key, value);
+        }
+
+        @Override
+        void toDouble(String key, double value) {
+            properties.addProperty(key, value);
+        }
+
+        @Override
+        void toBoolean(String key, boolean value) {
+            properties.addProperty(key, value);
+        }
+
+        @Override
+        void toString(String key, String value) {
+            properties.addProperty(key, value);
+        }
+    }
+
+    class UserAttributeSetter extends StringTypeParser {
+        AppboyUser appboyUser;
+
+        UserAttributeSetter(AppboyUser appboyUser, boolean enableTypeDetection) {
+            super(enableTypeDetection);
+            this.appboyUser = appboyUser;
+        }
+
+        @Override
+        void toInt(String key, int value) {
+            appboyUser.setCustomUserAttribute(key, value);
+        }
+
+        @Override
+        void toDouble(String key, double value) {
+            appboyUser.setCustomUserAttribute(key, value);
+        }
+
+        @Override
+        void toBoolean(String key, boolean value) {
+            appboyUser.setCustomUserAttribute(key, value);
+        }
+
+        @Override
+        void toString(String key, String value) {
+            appboyUser.setCustomUserAttribute(key, value);
         }
     }
 }

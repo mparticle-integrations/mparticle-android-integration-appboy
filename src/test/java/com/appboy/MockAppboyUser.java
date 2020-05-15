@@ -29,7 +29,7 @@ public class MockAppboyUser extends AppboyUser {
     }
 
     private Map<String, List<String>> customAttributeArray = new HashMap<>();
-    private Map<String, String> customAttributes = new HashMap<>();
+    private Map<String, Object> customAttributes = new HashMap<>();
 
     public Map<String, List<String>> getCustomAttributeArray() {
         return customAttributeArray;
@@ -62,7 +62,25 @@ public class MockAppboyUser extends AppboyUser {
         return true;
     }
 
-    public Map<String, String> getCustomUserAttributes() {
+    @Override
+    public boolean setCustomUserAttribute(String key, boolean value) {
+        customAttributes.put(key, value);
+        return true;
+    }
+
+    @Override
+    public boolean setCustomUserAttribute(String key, int value) {
+        customAttributes.put(key, value);
+        return true;
+    }
+
+    @Override
+    public boolean setCustomUserAttribute(String key, double value) {
+        customAttributes.put(key, value);
+        return true;
+    }
+
+    public Map<String, Object> getCustomUserAttributes() {
         return customAttributes;
     }
 }
