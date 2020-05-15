@@ -8,12 +8,15 @@ import com.mparticle.kits.AppboyPurchase;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Appboy {
     private static Appboy instance;
     private AppboyUser currentUser;
     private List<AppboyPurchase> purchases = new ArrayList<>();
+    private Map<String, AppboyProperties> events = new HashMap<String, AppboyProperties>();
 
     public static boolean configure(Context context, AppboyConfig config) {
         return true;
@@ -34,7 +37,7 @@ public class Appboy {
     }
 
     public void logCustomEvent(String key, AppboyProperties appboyProperties) {
-
+        events.put(key, appboyProperties);
     }
 
     public void logPurchase(String sku, String currency, BigDecimal unitPrice, int quantity, AppboyProperties purchaseProperties) {
@@ -45,7 +48,15 @@ public class Appboy {
         return purchases;
     }
 
+    public Map<String, AppboyProperties> getEvents() {
+        return events;
+    }
+
     public void clearPurchases() {
         purchases.clear();
+    }
+
+    public void clearEvents() {
+        events.clear();
     }
 }

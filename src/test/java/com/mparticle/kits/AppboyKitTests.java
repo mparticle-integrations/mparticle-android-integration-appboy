@@ -50,6 +50,7 @@ public class AppboyKitTests {
         MParticle.setInstance(Mockito.mock(MParticle.class));
         Mockito.when(MParticle.getInstance().Identity()).thenReturn(Mockito.mock(IdentityApi.class));
         Appboy.getInstance(new MockContext()).clearPurchases();
+        Appboy.getInstance(new MockContext()).clearEvents();
     }
 
     @Test
@@ -443,6 +444,95 @@ public class AppboyKitTests {
         assertEquals(properties.remove(ATT_PRODUCT_COUPON_CODE), "coupon code");
         assertEquals(properties.remove(ATT_TRANSACTION_ID), "the id");
         assertEquals(properties.remove(ATT_AFFILIATION), "the affiliation");
+
+        assertEquals(0, properties.size());
+    }
+
+    @Test
+    public void setUserAttributeTyped() {
+        AppboyKit kit = new MockAppboyKit();
+        kit.enableTypeDetection = true;
+        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+
+        kit.setUserAttribute("foo", "true");
+        assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof Boolean);
+        assertEquals(currentUser.getCustomUserAttributes().get("foo"), true);
+
+        kit.setUserAttribute("foo", "1");
+        assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof Integer);
+        assertEquals(currentUser.getCustomUserAttributes().get("foo"), 1);
+
+        kit.setUserAttribute("foo", "1.1");
+        assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof Double);
+        assertEquals(currentUser.getCustomUserAttributes().get("foo"), 1.1);
+
+        kit.setUserAttribute("foo", "bar");
+        assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof String);
+        assertEquals(currentUser.getCustomUserAttributes().get("foo"), "bar");
+    }
+
+    @Test
+    public void testEventStringType() {
+        AppboyKit kit = new MockAppboyKit();
+        kit.setConfiguration(new MockKitConfiguration());
+
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("foo", "false");
+        customAttributes.put("bar", "1");
+        customAttributes.put("baz", "1.5");
+        customAttributes.put("fuzz?", "foobar");
+
+        MPEvent customEvent = new MPEvent.Builder("testEvent", MParticle.EventType.Location)
+                .customAttributes(customAttributes)
+                .build();
+
+        kit.enableTypeDetection = true;
+        kit.logEvent(customEvent);
+
+        Appboy appboy = Appboy.getInstance(new MockContext());
+        Map<String, AppboyProperties> events = appboy.getEvents();
+
+        assertEquals(1, events.values().size());
+        AppboyProperties event = events.values().iterator().next();
+
+        Map<String, Object> properties = event.getProperties();
+        assertEquals(properties.remove("foo"), false);
+        assertEquals(properties.remove("bar"), 1);
+        assertEquals(properties.remove("baz"), 1.5);
+        assertEquals(properties.remove("fuzz?"), "foobar");
+
+        assertEquals(0, properties.size());
+    }
+
+    @Test
+    public void testEventStringTypeNotEnabled() {
+        AppboyKit kit = new MockAppboyKit();
+        kit.setConfiguration(new MockKitConfiguration());
+
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("foo", "false");
+        customAttributes.put("bar", "1");
+        customAttributes.put("baz", "1.5");
+        customAttributes.put("fuzz?", "foobar");
+
+        MPEvent customEvent = new MPEvent.Builder("testEvent", MParticle.EventType.Location)
+                .customAttributes(customAttributes)
+                .build();
+
+        kit.enableTypeDetection = false;
+        kit.logEvent(customEvent);
+
+        Appboy appboy = Appboy.getInstance(new MockContext());
+        Map<String, AppboyProperties> events = appboy.getEvents();
+
+        assertEquals(1, events.values().size());
+        AppboyProperties event = events.values().iterator().next();
+
+        Map<String, Object> properties = event.getProperties();
+        assertEquals(properties.remove("foo"), "false");
+        assertEquals(properties.remove("bar"), "1");
+        assertEquals(properties.remove("baz"), "1.5");
+        assertEquals(properties.remove("fuzz?"), "foobar");
 
         assertEquals(0, properties.size());
     }

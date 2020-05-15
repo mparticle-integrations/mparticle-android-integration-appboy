@@ -29,6 +29,11 @@ public class AppboyProperties {
         return this;
     }
 
+    public AppboyProperties addProperty(String key, boolean value) {
+        properties.put(key, value);
+        return this;
+    }
+
     public Map<String, Object> getProperties() {
         return properties;
     }
