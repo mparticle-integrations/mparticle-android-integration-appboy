@@ -157,7 +157,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                 if (attributeMap.containsKey(hashedKey)) {
                     user.removeFromCustomAttributeArray(attributeMap.get(hashedKey), entry.getValue());
                 }
-                attributeMap = getConfiguration().getEventAttributesRemoveFromUser();
+                attributeMap = getConfiguration().getEventAttributesSingleItemUser();
                 if (attributeMap.containsKey(hashedKey)) {
                     userAttributeSetter.parseValue(attributeMap.get(hashedKey), entry.getValue());
                 }
