@@ -1,7 +1,8 @@
 package com.mparticle.kits.mocks;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.mparticle.MParticle;
 import com.mparticle.UserAttributeListener;
