@@ -28,7 +28,7 @@ This repository contains an [example app](https://github.com/mparticle-integrati
 
     ```groovy
     dependencies {
-        compile 'com.mparticle:android-appboy-kit:5+'
+        implementation 'com.mparticle:android-appboy-kit:5+'
     }
     ```
 
