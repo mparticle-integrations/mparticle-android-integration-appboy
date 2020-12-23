@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.appboy.Appboy;
-import com.appboy.AppboyFcmReceiver;
+import com.appboy.AppboyFirebaseMessagingService;
 import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.AppboyUser;
 import com.appboy.IAppboyEndpointProvider;
@@ -20,6 +20,7 @@ import com.appboy.enums.Month;
 import com.appboy.enums.SdkFlavor;
 import com.appboy.models.outgoing.AppboyProperties;
 import com.appboy.push.AppboyNotificationUtils;
+import com.google.firebase.messaging.RemoteMessage;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.MParticle.UserAttributes;
@@ -420,7 +421,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public void onPushMessageReceived(Context context, Intent pushIntent) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
-            new AppboyFcmReceiver().onReceive(context, pushIntent);
+            AppboyFirebaseMessagingService.handleBrazeRemoteMessage(context, new RemoteMessage(pushIntent.getExtras()));
         }
     }
 
