@@ -1,0 +1,19 @@
+name: Dependabot automerge
+on: pull_request
+jobs:
+  automerge:
+    name: Rebase dependabot PRs
+    runs-on: [ubuntu-latest]
+    if: contains(github.repository, 'mparticle-android-integration') && github.event_name == 'pull_request'
+    steps:
+      - name: Rebase Dependabot PR
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.PERSONAL_TOKEN}}
+          script: |
+            github.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.payload.repository.name,
+                pull_number: context.payload.pull_request.number,
+                merge_method: 'rebase'
+            });
