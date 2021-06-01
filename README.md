@@ -50,7 +50,7 @@ There are a wide variety of implementation options available in Braze to deeplin
 
     Whereas up until now you should have nothing Braze-specific in your `AndroidManifest.xml`, using Braze's automatic deeplinking does require you to add their `AppboyFcmReceiver`. Note that you do not need to specify any Intent filters (for example to receive push tokens, since mParticle takes care of that). You just need to add the following:
 
-        <receiver android:name="com.appboy.AppboyFcmReceiver" />
+        <receiver android:name="com.appboy.BrazePushReceiver" />
     
 - `appboy.xml`
 
