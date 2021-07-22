@@ -1,6 +1,6 @@
 package com.mparticle.kits;
 
-import com.appboy.models.outgoing.AppboyProperties;
+import com.braze.models.outgoing.BrazeProperties;
 
 import java.math.BigDecimal;
 
@@ -9,9 +9,9 @@ public class AppboyPurchase {
     private String currency;
     private BigDecimal unitPrice;
     private int quantity;
-    private AppboyProperties purchaseProperties;
+    private BrazeProperties purchaseProperties;
 
-    public AppboyPurchase(String sku, String currency, BigDecimal unitPrice, int quantity, AppboyProperties purchaseProperties) {
+    public AppboyPurchase(String sku, String currency, BigDecimal unitPrice, int quantity, BrazeProperties purchaseProperties) {
         this.sku = sku;
         this.currency = currency;
         this.unitPrice = unitPrice;
@@ -35,7 +35,7 @@ public class AppboyPurchase {
         return quantity;
     }
 
-    public AppboyProperties getPurchaseProperties() {
+    public BrazeProperties getPurchaseProperties() {
         return purchaseProperties;
     }
 }

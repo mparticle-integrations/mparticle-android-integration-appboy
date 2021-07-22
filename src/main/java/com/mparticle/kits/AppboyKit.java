@@ -9,17 +9,17 @@ import android.os.Handler;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.appboy.Appboy;
 import com.appboy.AppboyFirebaseMessagingService;
 import com.appboy.AppboyLifecycleCallbackListener;
-import com.appboy.AppboyUser;
 import com.appboy.IAppboyEndpointProvider;
-import com.appboy.configuration.AppboyConfig;
 import com.appboy.enums.Gender;
 import com.appboy.enums.Month;
 import com.appboy.enums.SdkFlavor;
-import com.appboy.models.outgoing.AppboyProperties;
 import com.appboy.push.AppboyNotificationUtils;
+import com.braze.Braze;
+import com.braze.BrazeUser;
+import com.braze.configuration.BrazeConfig;
+import com.braze.models.outgoing.BrazeProperties;
 import com.google.firebase.messaging.RemoteMessage;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
@@ -90,13 +90,13 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
-        AppboyConfig config = new AppboyConfig.Builder().setApiKey(key).setSdkFlavor(SdkFlavor.MPARTICLE).build();
-        Appboy.configure(context, config);
+        BrazeConfig config = new BrazeConfig.Builder().setApiKey(key).setSdkFlavor(SdkFlavor.MPARTICLE).build();
+        Braze.configure(context, config);
         dataFlushRunnable = new Runnable() {
             @Override
             public void run() {
                 if (getKitManager().isBackgrounded()) {
-                    Appboy.getInstance(getContext()).requestImmediateDataFlush();
+                   Braze.getInstance(getContext()).requestImmediateDataFlush();
                 }
             }
         };
@@ -142,14 +142,14 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public List<ReportingMessage> logEvent(MPEvent event) {
         if (event.getCustomAttributes() == null) {
-            Appboy.getInstance(getContext()).logCustomEvent(event.getEventName());
+           Braze.getInstance(getContext()).logCustomEvent(event.getEventName());
         } else {
-            AppboyProperties properties = new AppboyProperties();
-            AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
-            AppboyPropertiesSetter appboyPropertiesSetter = new AppboyPropertiesSetter(properties, enableTypeDetection);
+            BrazeProperties properties = new BrazeProperties();
+            BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
+            BrazePropertiesSetter brazePropertiesSetter = new BrazePropertiesSetter(properties, enableTypeDetection);
             UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
             for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
-                appboyPropertiesSetter.parseValue(entry.getKey(), entry.getValue());
+                brazePropertiesSetter.parseValue(entry.getKey(), entry.getValue());
                 Integer hashedKey = KitUtils.hashForFiltering(event.getEventType().toString() + event.getEventName() + entry.getKey());
                 Map<Integer, String> attributeMap = getConfiguration().getEventAttributesAddToUser();
                 if (attributeMap.containsKey(hashedKey)) {
@@ -164,7 +164,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                     userAttributeSetter.parseValue(attributeMap.get(hashedKey), entry.getValue());
                 }
             }
-            Appboy.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
+            Braze.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
         }
         queueDataFlush();
         List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
@@ -176,14 +176,14 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     public List<ReportingMessage> logScreen(String screenName, Map<String, String> screenAttributes) {
         if (forwardScreenViews) {
             if (screenAttributes == null) {
-                Appboy.getInstance(getContext()).logCustomEvent(screenName);
+                Braze.getInstance(getContext()).logCustomEvent(screenName);
             } else {
-                AppboyProperties properties = new AppboyProperties();
-                StringTypeParser propertyParser = new AppboyPropertiesSetter(properties, enableTypeDetection);
+                BrazeProperties properties = new BrazeProperties();
+                StringTypeParser propertyParser = new BrazePropertiesSetter(properties, enableTypeDetection);
                 for (Map.Entry<String, String> entry : screenAttributes.entrySet()) {
                     propertyParser.parseValue(entry.getKey(), entry.getValue());
                 }
-                Appboy.getInstance(getContext()).logCustomEvent(screenName, properties);
+                Braze.getInstance(getContext()).logCustomEvent(screenName, properties);
             }
             queueDataFlush();
             List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
@@ -231,7 +231,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void setUserAttribute(String key, String value) {
-        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
         UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
         if (UserAttributes.CITY.equals(key)) {
             user.setHomeCity(value);
@@ -281,7 +281,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void setUserAttributeList(String key, List<String> list) {
-        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
         String[] array = list.toArray(new String[list.size()]);
         user.setCustomAttributeArray(key, array);
         queueDataFlush();
@@ -315,7 +315,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public void removeUserAttribute(String key) {
-        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
         if (UserAttributes.CITY.equals(key)) {
             user.setHomeCity(null);
         } else if (UserAttributes.COUNTRY.equals(key)) {
@@ -353,9 +353,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     }
 
     void logTransaction(CommerceEvent event, Product product) {
-        final AppboyProperties purchaseProperties = new AppboyProperties();
+        final BrazeProperties purchaseProperties = new BrazeProperties();
         final String[] currency = new String[1];
-        final StringTypeParser commerceTypeParser = new AppboyPropertiesSetter(purchaseProperties, enableTypeDetection);
+        final StringTypeParser commerceTypeParser = new BrazePropertiesSetter(purchaseProperties, enableTypeDetection);
         CommerceEventUtils.OnAttributeExtracted onAttributeExtracted = new CommerceEventUtils.OnAttributeExtracted() {
 
             @Override
@@ -401,7 +401,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE;
         }
-        Appboy.getInstance(getContext()).logPurchase(
+        Braze.getInstance(getContext()).logPurchase(
                 product.getSku(),
                 currencyValue,
                 new BigDecimal(product.getUnitPrice()),
@@ -428,7 +428,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public boolean onPushRegistration(String instanceId, String senderId) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
-            Appboy.getInstance(getContext()).registerAppboyPushMessages(instanceId);
+            Braze.getInstance(getContext()).registerAppboyPushMessages(instanceId);
             queueDataFlush();
             return true;
         } else {
@@ -437,7 +437,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     }
 
     protected void setAuthority(final String authority) {
-        Appboy.setAppboyEndpointProvider(
+        Braze.setAppboyEndpointProvider(
                 new IAppboyEndpointProvider() {
                     @Override
                     public Uri getApiEndpoint(Uri appboyEndpoint) {
@@ -490,16 +490,16 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     }
 
     protected void setId(String customerId) {
-        AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+        BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
         if (user == null || (user.getUserId() != null && !user.getUserId().equals(customerId))) {
-            Appboy.getInstance(getContext()).changeUser(customerId);
+            Braze.getInstance(getContext()).changeUser(customerId);
             queueDataFlush();
         }
     }
 
     protected void setEmail(String email) {
         if (!email.equals(getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null))) {
-            AppboyUser user = Appboy.getInstance(getContext()).getCurrentUser();
+            BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
             user.setEmail(email);
             queueDataFlush();
             getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply();
@@ -511,7 +511,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         
     }
 
-    void addToProperties(AppboyProperties properties, String key, String value) {
+    void addToProperties(BrazeProperties properties, String key, String value) {
         try {
             if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
                 properties.addProperty(key, Boolean.parseBoolean(value));
@@ -588,10 +588,10 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         abstract void toString(String key, String value);
     }
 
-    class AppboyPropertiesSetter extends StringTypeParser {
-        AppboyProperties properties;
+    class BrazePropertiesSetter extends StringTypeParser {
+        BrazeProperties properties;
 
-        AppboyPropertiesSetter(AppboyProperties properties, boolean enableTypeDetection) {
+        BrazePropertiesSetter(BrazeProperties properties, boolean enableTypeDetection) {
             super(enableTypeDetection);
             this.properties = properties;
         }
@@ -618,31 +618,31 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     }
 
     class UserAttributeSetter extends StringTypeParser {
-        AppboyUser appboyUser;
+        BrazeUser brazeUser;
 
-        UserAttributeSetter(AppboyUser appboyUser, boolean enableTypeDetection) {
+        UserAttributeSetter(BrazeUser brazeUser, boolean enableTypeDetection) {
             super(enableTypeDetection);
-            this.appboyUser = appboyUser;
+            this.brazeUser = brazeUser;
         }
 
         @Override
         void toInt(String key, int value) {
-            appboyUser.setCustomUserAttribute(key, value);
+            brazeUser.setCustomUserAttribute(key, value);
         }
 
         @Override
         void toDouble(String key, double value) {
-            appboyUser.setCustomUserAttribute(key, value);
+            brazeUser.setCustomUserAttribute(key, value);
         }
 
         @Override
         void toBoolean(String key, boolean value) {
-            appboyUser.setCustomUserAttribute(key, value);
+            brazeUser.setCustomUserAttribute(key, value);
         }
 
         @Override
         void toString(String key, String value) {
-            appboyUser.setCustomUserAttribute(key, value);
+            brazeUser.setCustomUserAttribute(key, value);
         }
     }
 }
