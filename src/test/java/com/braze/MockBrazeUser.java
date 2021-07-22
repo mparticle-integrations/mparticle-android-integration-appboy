@@ -1,5 +1,6 @@
-package com.appboy;
+package com.braze;
 
+import com.appboy.AppboyUser;
 import com.appboy.enums.Month;
 
 import java.util.ArrayList;
@@ -7,13 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MockAppboyUser extends AppboyUser {
+public class MockBrazeUser extends BrazeUser {
     public int dobYear = -1;
     public Month dobMonth = null;
     public int dobDay = -1;
 
-    MockAppboyUser() {
-        super(null, null, null, null, null);
+    MockBrazeUser() {
+        super();
+
     }
 
     public boolean setDateOfBirth(int year, Month month, int day) {

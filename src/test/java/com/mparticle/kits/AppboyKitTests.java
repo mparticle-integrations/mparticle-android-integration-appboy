@@ -1,10 +1,10 @@
 package com.mparticle.kits;
 
 
-import com.appboy.Appboy;
-import com.appboy.MockAppboyUser;
 import com.appboy.enums.Month;
-import com.appboy.models.outgoing.AppboyProperties;
+import com.braze.Braze;
+import com.braze.models.outgoing.BrazeProperties;
+import com.braze.MockBrazeUser;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.commerce.CommerceEvent;
@@ -29,8 +29,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static com.mparticle.internal.Logger.*;
-import static com.mparticle.kits.CommerceEventUtils.Constants.*;
+import static com.mparticle.internal.Logger.DefaultLogHandler;
+import static com.mparticle.internal.Logger.setLogHandler;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_ACTION_LIST;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_LIST_SOURCE;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_AFFILIATION;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_SHIPPING;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_TAX;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_TOTAL;
+import static com.mparticle.kits.CommerceEventUtils.Constants.ATT_TRANSACTION_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -49,8 +58,8 @@ public class AppboyKitTests {
     public void setup() {
         MParticle.setInstance(Mockito.mock(MParticle.class));
         Mockito.when(MParticle.getInstance().Identity()).thenReturn(Mockito.mock(IdentityApi.class));
-        Appboy.getInstance(new MockContext()).clearPurchases();
-        Appboy.getInstance(new MockContext()).clearEvents();
+        Braze.getInstance(new MockContext()).clearPurchases();
+        Braze.getInstance(new MockContext()).clearEvents();
     }
 
     @Test
@@ -215,7 +224,7 @@ public class AppboyKitTests {
     public void testSetUserAttributeAge() {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         AppboyKit kit = new MockAppboyKit();
-        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
 
         assertEquals(-1, currentUser.dobDay);
         assertEquals(-1, currentUser.dobYear);
@@ -230,7 +239,7 @@ public class AppboyKitTests {
     @Test
     public void testSetUserDoB() {
         AppboyKit kit = new MockAppboyKit();
-        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
 
         final String[] errorMessage = new String[1];
         setLogHandler(new DefaultLogHandler() {
@@ -319,7 +328,7 @@ public class AppboyKitTests {
     @Test
     public void addRemoveAttributeFromEventTest() {
         AppboyKit kit = new MockAppboyKit();
-        MockAppboyUser currentUser = (MockAppboyUser) Appboy.getInstance(null).getCurrentUser();
+        MockBrazeUser currentUser = (MockBrazeUser) Braze.getInstance(null).getCurrentUser();
 
         kit.setConfiguration(new MockKitConfiguration() {
             @Override
@@ -368,8 +377,8 @@ public class AppboyKitTests {
 
         kit.logTransaction(commerceEvent, product);
 
-        Appboy appboy = Appboy.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = appboy.getPurchases();
+        Braze braze = Braze.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
         AppboyPurchase purchase = purchases.get(0);
@@ -388,8 +397,8 @@ public class AppboyKitTests {
 
         kit.logTransaction(commerceEvent, product);
 
-        Appboy appboy = Appboy.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = appboy.getPurchases();
+        Braze braze = Braze.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
         AppboyPurchase purchase = purchases.get(0);
@@ -423,8 +432,8 @@ public class AppboyKitTests {
 
         kit.logTransaction(commerceEvent, product);
 
-        Appboy appboy = Appboy.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = appboy.getPurchases();
+        Braze braze = Braze.getInstance(new MockContext());
+        List<AppboyPurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
         AppboyPurchase purchase = purchases.get(0);
@@ -452,7 +461,7 @@ public class AppboyKitTests {
     public void setUserAttributeTyped() {
         AppboyKit kit = new MockAppboyKit();
         kit.enableTypeDetection = true;
-        MockAppboyUser currentUser = (MockAppboyUser)Appboy.getInstance(null).getCurrentUser();
+        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
 
         kit.setUserAttribute("foo", "true");
         assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof Boolean);
@@ -489,11 +498,11 @@ public class AppboyKitTests {
         kit.enableTypeDetection = true;
         kit.logEvent(customEvent);
 
-        Appboy appboy = Appboy.getInstance(new MockContext());
-        Map<String, AppboyProperties> events = appboy.getEvents();
+        Braze braze = Braze.getInstance(new MockContext());
+        Map<String, BrazeProperties> events = braze.getEvents();
 
         assertEquals(1, events.values().size());
-        AppboyProperties event = events.values().iterator().next();
+        BrazeProperties event = events.values().iterator().next();
 
         Map<String, Object> properties = event.getProperties();
         assertEquals(properties.remove("foo"), false);
@@ -522,11 +531,11 @@ public class AppboyKitTests {
         kit.enableTypeDetection = false;
         kit.logEvent(customEvent);
 
-        Appboy appboy = Appboy.getInstance(new MockContext());
-        Map<String, AppboyProperties> events = appboy.getEvents();
+        Braze braze = Braze.getInstance(new MockContext());
+        Map<String, BrazeProperties> events = braze.getEvents();
 
         assertEquals(1, events.values().size());
-        AppboyProperties event = events.values().iterator().next();
+        BrazeProperties event = events.values().iterator().next();
 
         Map<String, Object> properties = event.getProperties();
         assertEquals(properties.remove("foo"), "false");
