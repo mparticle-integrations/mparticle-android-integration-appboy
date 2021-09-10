@@ -1,6 +1,5 @@
 package com.braze;
 
-import com.appboy.AppboyUser;
 import com.appboy.enums.Month;
 
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ public class MockBrazeUser extends BrazeUser {
     public int dobDay = -1;
 
     MockBrazeUser() {
-        super();
+        super(null, null, null, null, null);
 
     }
 
