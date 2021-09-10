@@ -378,10 +378,10 @@ public class AppboyKitTests {
         kit.logTransaction(commerceEvent, product);
 
         Braze braze = Braze.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = braze.getPurchases();
+        List<BrazePurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
-        AppboyPurchase purchase = purchases.get(0);
+        BrazePurchase purchase = purchases.get(0);
 
         assertEquals("Moon Dollars", purchase.getCurrency());
         assertNull(purchase.getPurchaseProperties().getProperties().get(ATT_ACTION_CURRENCY_CODE));
@@ -398,10 +398,10 @@ public class AppboyKitTests {
         kit.logTransaction(commerceEvent, product);
 
         Braze braze = Braze.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = braze.getPurchases();
+        List<BrazePurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
-        AppboyPurchase purchase = purchases.get(0);
+        BrazePurchase purchase = purchases.get(0);
 
         assertEquals(CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE, purchase.getCurrency());
         assertNull(purchase.getPurchaseProperties().getProperties().get(ATT_ACTION_CURRENCY_CODE));
@@ -433,10 +433,10 @@ public class AppboyKitTests {
         kit.logTransaction(commerceEvent, product);
 
         Braze braze = Braze.getInstance(new MockContext());
-        List<AppboyPurchase> purchases = braze.getPurchases();
+        List<BrazePurchase> purchases = braze.getPurchases();
 
         assertEquals(1, purchases.size());
-        AppboyPurchase purchase = purchases.get(0);
+        BrazePurchase purchase = purchases.get(0);
 
         assertEquals("Moon Dollars", purchase.getCurrency());
         assertEquals(5.0, purchase.getQuantity(), 0.01);

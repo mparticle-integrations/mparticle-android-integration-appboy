@@ -2,10 +2,9 @@ package com.braze;
 
 import android.content.Context;
 
-import com.appboy.AppboyUser;
 import com.braze.configuration.BrazeConfig;
 import com.braze.models.outgoing.BrazeProperties;
-import com.mparticle.kits.AppboyPurchase;
+import com.mparticle.kits.BrazePurchase;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.Map;
 public class Braze {
     private static Braze instance;
     private MockBrazeUser currentUser;
-    private List<AppboyPurchase> purchases = new ArrayList<>();
+    private List<BrazePurchase> purchases = new ArrayList<>();
     private Map<String, BrazeProperties> events = new HashMap<String, BrazeProperties>();
 
     public static boolean configure(Context context, BrazeConfig config) {
@@ -30,7 +29,7 @@ public class Braze {
         return instance;
     }
 
-    public <T extends AppboyUser> T getCurrentUser() {
+    public <T extends BrazeUser> T getCurrentUser() {
         if (currentUser == null) {
             currentUser = new MockBrazeUser();
         }
@@ -42,10 +41,10 @@ public class Braze {
     }
 
     public void logPurchase(String sku, String currency, BigDecimal unitPrice, int quantity, BrazeProperties purchaseProperties) {
-        purchases.add(new AppboyPurchase(sku, currency, unitPrice, quantity, purchaseProperties));
+        purchases.add(new BrazePurchase(sku, currency, unitPrice, quantity, purchaseProperties));
     }
 
-    public List<AppboyPurchase> getPurchases() {
+    public List<BrazePurchase> getPurchases() {
         return purchases;
     }
 
