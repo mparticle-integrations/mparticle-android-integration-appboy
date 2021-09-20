@@ -16,14 +16,14 @@ jobs:
           arguments: clean assemble test
   automerge:
     name: Rebase dependabot PRs
-    needs: [unit-tests]
+    needs: [ unit-tests ]
     if: ${{github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}}
     runs-on: ubuntu-latest
     steps:
       - name: Rebase Dependabot PR
         uses: actions/github-script@v3
         with:
-          github-token: ${{secrets.PERSONAL_TOKEN}}
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             github.pulls.merge({
                 owner: context.repo.owner,
