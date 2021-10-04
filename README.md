@@ -17,7 +17,7 @@ This repository contains an [example app](https://github.com/mparticle-integrati
 
     ```
     repositories {
-        maven { url "http://appboy.github.io/appboy-android-sdk/sdk" }
+        maven { url "https://appboy.github.io/appboy-android-sdk/sdk" }
         //Braze's library depends on the Google Support Library
         google()
         ...
