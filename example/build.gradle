@@ -31,7 +31,7 @@ android {
 
 repositories {
     jcenter()
-    maven { url "http://appboy.github.io/appboy-android-sdk/sdk" } //REQUIRED: Braze isn't available in jCenter or Maven Central - so you need to add their Maven Server
+    maven { url "https://appboy.github.io/appboy-android-sdk/sdk" } //REQUIRED: Braze isn't available in jCenter or Maven Central - so you need to add their Maven Server
     google()
 }
 
