@@ -19,6 +19,7 @@ import com.appboy.push.AppboyNotificationUtils;
 import com.braze.Braze;
 import com.braze.BrazeUser;
 import com.braze.configuration.BrazeConfig;
+import com.braze.enums.BrazeSdkMetadata;
 import com.braze.models.outgoing.BrazeProperties;
 import com.google.firebase.messaging.RemoteMessage;
 import com.mparticle.MPEvent;
@@ -32,6 +33,7 @@ import com.mparticle.internal.Logger;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +92,10 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
-        BrazeConfig config = new BrazeConfig.Builder().setApiKey(key).setSdkFlavor(SdkFlavor.MPARTICLE).build();
+        BrazeConfig config = new BrazeConfig.Builder().setApiKey(key)
+            .setSdkFlavor(SdkFlavor.MPARTICLE)
+            .setSdkMetadata(EnumSet.of(BrazeSdkMetadata.MPARTICLE))
+            .build();
         Braze.configure(context, config);
         dataFlushRunnable = new Runnable() {
             @Override
