@@ -12,7 +12,7 @@
         android:theme="@style/AppTheme">
 
         <!-- This Braze receiver is necessary to react to pending Intents within push notifications -->
-        <receiver android:name="com.appboy.AppboyFcmReceiver" />
+        <receiver android:name="com.braze.push.BrazePushReceiver" />
 
         <!-- This mParticle receiver is necessary to register for push notification tokens -->
         <receiver
