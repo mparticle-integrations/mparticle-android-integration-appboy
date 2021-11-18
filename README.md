@@ -40,26 +40,26 @@ mParticle's SDK takes care of registering for push notifications and passing tok
 
 [See a full example of an AndroidManifest.xml here](https://github.com/mparticle-integrations/mparticle-android-integration-appboy/blob/master/example/src/main/AndroidManifest.xml).
 
-mParticle's SDK also takes care of capturing incoming push notifications and passing the resulting `Intent` to Braze's `AppboyFcmReceiver`. Follow the [mParticle push notification documentation](https://docs.mparticle.com/developers/sdk/android/push-notifications#display-push-notifications) to ensure you add the correct services and receivers to your app's AndroidManifest.xml.
+mParticle's SDK also takes care of capturing incoming push notifications and passing the resulting `Intent` to Braze's `BrazePushReceiver`. Follow the [mParticle push notification documentation](https://docs.mparticle.com/developers/sdk/android/push-notifications#display-push-notifications) to ensure you add the correct services and receivers to your app's AndroidManifest.xml.
 
 ### 4. Reacting to Push and Deeplinking
 
 There are a wide variety of implementation options available in Braze to deeplink a user when they tap a notification. There are **two specific requirements** to ensure automatic deeplinking works as intended.
 
-- `AppboyFcmReceiver`
+- `BrazePushReceiver`
 
-    Whereas up until now you should have nothing Braze-specific in your `AndroidManifest.xml`, using Braze's automatic deeplinking does require you to add their `AppboyFcmReceiver`. Note that you do not need to specify any Intent filters (for example to receive push tokens, since mParticle takes care of that). You just need to add the following:
+    Whereas up until now you should have nothing Braze-specific in your `AndroidManifest.xml`, using Braze's automatic deeplinking does require you to add their `BrazePushReceiver`. Note that you do not need to specify any Intent filters (for example to receive push tokens, since mParticle takes care of that). You just need to add the following:
 
-        <receiver android:name="com.appboy.BrazePushReceiver" />
+        <receiver android:name="com.braze.push.BrazePushReceiver" />
     
-- `appboy.xml`
+- `braze.xml`
 
-    For automatic deep-linking, you need to add a boolean resource named `com_appboy_handle_push_deep_links_automatically`. This can be in any resource file, or you can name it `appboy.xml`:
+    For automatic deep-linking, you need to add a boolean resource named `com_braze_handle_push_deep_links_automatically`. This can be in any resource file, or you can name it `braze.xml`:
 
     ```xml
     <?xml version="1.0" encoding="utf-8"?>
     <resources>
-        <bool name="com_appboy_handle_push_deep_links_automatically">true</bool>
+        <bool name="com_braze_handle_push_deep_links_automatically">true</bool>
     </resources>
     ```
 
