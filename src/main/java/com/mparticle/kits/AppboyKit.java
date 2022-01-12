@@ -275,7 +275,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             } catch (Exception e) {
                 Logger.error("unable to set DateOfBirth for \"dob\" = " + value + ". Exception: " + e.getMessage());
             }
-        } else if(UserAttributes.ZIPCODE.equals(key)){
+        } else if (UserAttributes.ZIPCODE.equals(key)) {
             user.setCustomUserAttribute("Zip", value);
         } else {
             if (key.startsWith("$")) {
