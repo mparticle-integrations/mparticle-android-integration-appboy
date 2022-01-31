@@ -11,7 +11,7 @@ import androidx.annotation.Nullable;
 
 import com.appboy.AppboyFirebaseMessagingService;
 import com.appboy.AppboyLifecycleCallbackListener;
-import com.appboy.IAppboyEndpointProvider;
+import com.appboy.IBrazeEndpointProvider;
 import com.appboy.enums.Gender;
 import com.appboy.enums.Month;
 import com.appboy.enums.SdkFlavor;
@@ -444,8 +444,8 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     }
 
     protected void setAuthority(final String authority) {
-        Braze.setAppboyEndpointProvider(
-                new IAppboyEndpointProvider() {
+        Braze.setEndpointProvider(
+                new IBrazeEndpointProvider() {
                     @Override
                     public Uri getApiEndpoint(Uri appboyEndpoint) {
                         return appboyEndpoint.buildUpon()
