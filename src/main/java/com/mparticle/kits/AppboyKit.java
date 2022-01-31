@@ -562,7 +562,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
     }
 
-    abstract class StringTypeParser {
+    abstract static class StringTypeParser {
         boolean enableTypeDetection;
 
         StringTypeParser(boolean enableTypeDetection) {
@@ -595,7 +595,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         abstract void toString(String key, String value);
     }
 
-    class BrazePropertiesSetter extends StringTypeParser {
+    static class BrazePropertiesSetter extends StringTypeParser {
         BrazeProperties properties;
 
         BrazePropertiesSetter(BrazeProperties properties, boolean enableTypeDetection) {
