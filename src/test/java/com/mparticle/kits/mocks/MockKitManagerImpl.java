@@ -3,7 +3,6 @@ package com.mparticle.kits.mocks;
 import android.content.Context;
 
 import com.mparticle.MParticleOptions;
-import com.mparticle.internal.BackgroundTaskHandler;
 import com.mparticle.internal.CoreCallbacks;
 import com.mparticle.internal.ReportingManager;
 import com.mparticle.kits.KitConfiguration;
@@ -21,12 +20,7 @@ public class MockKitManagerImpl extends KitManagerImpl {
     }
 
     public MockKitManagerImpl(Context context, ReportingManager reportingManager, CoreCallbacks coreCallbacks) {
-        super(context, reportingManager, coreCallbacks, new BackgroundTaskHandler() {
-            @Override
-            public void executeNetworkRequest(Runnable runnable) {
-
-            }
-        }, Mockito.mock(MParticleOptions.class));
+        super(context, reportingManager, coreCallbacks, Mockito.mock(MParticleOptions.class));
     }
 
     @Override
