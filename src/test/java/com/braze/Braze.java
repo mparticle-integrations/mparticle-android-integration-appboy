@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class Braze {
     private static Braze instance;
-    private MockBrazeUser currentUser;
+    private BrazeUser currentUser;
     private List<BrazePurchase> purchases = new ArrayList<>();
     private Map<String, BrazeProperties> events = new HashMap<String, BrazeProperties>();
 
@@ -31,7 +31,7 @@ public class Braze {
 
     public <T extends BrazeUser> T getCurrentUser() {
         if (currentUser == null) {
-            currentUser = new MockBrazeUser();
+            currentUser = new BrazeUser();
         }
         return (T)currentUser;
     }
