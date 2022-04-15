@@ -10,17 +10,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.appboy.AppboyFirebaseMessagingService;
-import com.appboy.AppboyLifecycleCallbackListener;
 import com.appboy.IBrazeEndpointProvider;
 import com.appboy.enums.Gender;
 import com.appboy.enums.Month;
 import com.appboy.enums.SdkFlavor;
-import com.appboy.push.AppboyNotificationUtils;
 import com.braze.Braze;
+import com.braze.BrazeActivityLifecycleCallbackListener;
 import com.braze.BrazeUser;
 import com.braze.configuration.BrazeConfig;
 import com.braze.enums.BrazeSdkMetadata;
 import com.braze.models.outgoing.BrazeProperties;
+import com.braze.push.BrazeNotificationUtils;
 import com.google.firebase.messaging.RemoteMessage;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
@@ -107,7 +107,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         };
         queueDataFlush();
         if (setDefaultAppboyLifecycleCallbackListener) {
-            ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new AppboyLifecycleCallbackListener());
+            ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(new BrazeActivityLifecycleCallbackListener());
         }
         setIdentityType(settings);
         return null;
@@ -422,7 +422,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         if (!Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
             return false;
         }
-        return AppboyNotificationUtils.isAppboyPushMessage(intent);
+        return BrazeNotificationUtils.isAppboyPushMessage(intent);
     }
 
     @Override
@@ -595,7 +595,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         abstract void toString(String key, String value);
     }
 
-    static class BrazePropertiesSetter extends StringTypeParser {
+    class BrazePropertiesSetter extends StringTypeParser {
         BrazeProperties properties;
 
         BrazePropertiesSetter(BrazeProperties properties, boolean enableTypeDetection) {

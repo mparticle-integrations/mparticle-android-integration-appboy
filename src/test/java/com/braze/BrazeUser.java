@@ -7,15 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MockBrazeUser extends BrazeUser {
+public class BrazeUser {
     public int dobYear = -1;
     public Month dobMonth = null;
     public int dobDay = -1;
-
-    MockBrazeUser() {
-        super(null, null, null, null, null);
-
-    }
 
     public boolean setDateOfBirth(int year, Month month, int day) {
         dobYear = year;
@@ -31,7 +26,6 @@ public class MockBrazeUser extends BrazeUser {
         return customAttributeArray;
     }
 
-    @Override
     public boolean addToCustomAttributeArray(String key, String value) {
         List<String> customArray = customAttributeArray.get(key);
         if (customArray == null) {
@@ -42,7 +36,6 @@ public class MockBrazeUser extends BrazeUser {
         return true;
     }
 
-    @Override
     public boolean removeFromCustomAttributeArray(String key, String value) {
         try {
             customAttributeArray.get(key).remove(value);
@@ -52,25 +45,21 @@ public class MockBrazeUser extends BrazeUser {
         }
     }
 
-    @Override
     public boolean setCustomUserAttribute(String key, String value) {
         customAttributes.put(key, value);
         return true;
     }
 
-    @Override
     public boolean setCustomUserAttribute(String key, boolean value) {
         customAttributes.put(key, value);
         return true;
     }
 
-    @Override
     public boolean setCustomUserAttribute(String key, int value) {
         customAttributes.put(key, value);
         return true;
     }
 
-    @Override
     public boolean setCustomUserAttribute(String key, double value) {
         customAttributes.put(key, value);
         return true;

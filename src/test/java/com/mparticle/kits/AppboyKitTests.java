@@ -3,8 +3,8 @@ package com.mparticle.kits;
 
 import com.appboy.enums.Month;
 import com.braze.Braze;
+import com.braze.BrazeUser;
 import com.braze.models.outgoing.BrazeProperties;
-import com.braze.MockBrazeUser;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.commerce.CommerceEvent;
@@ -224,7 +224,7 @@ public class AppboyKitTests {
     public void testSetUserAttributeAge() {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         AppboyKit kit = new MockAppboyKit();
-        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
+        BrazeUser currentUser = (BrazeUser)Braze.getInstance(null).getCurrentUser();
 
         assertEquals(-1, currentUser.dobDay);
         assertEquals(-1, currentUser.dobYear);
@@ -239,7 +239,7 @@ public class AppboyKitTests {
     @Test
     public void testSetUserDoB() {
         AppboyKit kit = new MockAppboyKit();
-        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
+        BrazeUser currentUser = (BrazeUser)Braze.getInstance(null).getCurrentUser();
 
         final String[] errorMessage = new String[1];
         setLogHandler(new DefaultLogHandler() {
@@ -328,7 +328,7 @@ public class AppboyKitTests {
     @Test
     public void addRemoveAttributeFromEventTest() {
         AppboyKit kit = new MockAppboyKit();
-        MockBrazeUser currentUser = (MockBrazeUser) Braze.getInstance(null).getCurrentUser();
+        BrazeUser currentUser = (BrazeUser) Braze.getInstance(null).getCurrentUser();
 
         kit.setConfiguration(new MockKitConfiguration() {
             @Override
@@ -461,7 +461,7 @@ public class AppboyKitTests {
     public void setUserAttributeTyped() {
         AppboyKit kit = new MockAppboyKit();
         kit.enableTypeDetection = true;
-        MockBrazeUser currentUser = (MockBrazeUser)Braze.getInstance(null).getCurrentUser();
+        BrazeUser currentUser = (BrazeUser)Braze.getInstance(null).getCurrentUser();
 
         kit.setUserAttribute("foo", "true");
         assertTrue(currentUser.getCustomUserAttributes().get("foo") instanceof Boolean);
