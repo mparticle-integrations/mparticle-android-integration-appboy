@@ -33,7 +33,9 @@ import com.mparticle.internal.Logger;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -146,6 +148,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     @Override
     public List<ReportingMessage> logEvent(MPEvent event) {
+        Map<String, Object> newAttributes = new HashMap<>();
         if (event.getCustomAttributes() == null) {
            Braze.getInstance(getContext()).logCustomEvent(event.getEventName());
         } else {
@@ -154,7 +157,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             BrazePropertiesSetter brazePropertiesSetter = new BrazePropertiesSetter(properties, enableTypeDetection);
             UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
             for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
-                brazePropertiesSetter.parseValue(entry.getKey(), entry.getValue());
+                newAttributes.put(entry.getKey(), brazePropertiesSetter.parseValue(entry.getKey(), entry.getValue()));
                 Integer hashedKey = KitUtils.hashForFiltering(event.getEventType().toString() + event.getEventName() + entry.getKey());
                 Map<Integer, String> attributeMap = getConfiguration().getEventAttributesAddToUser();
                 if (attributeMap.containsKey(hashedKey)) {
@@ -172,9 +175,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             Braze.getInstance(getContext()).logCustomEvent(event.getEventName(), properties);
         }
         queueDataFlush();
-        List<ReportingMessage> messages = new LinkedList<ReportingMessage>();
-        messages.add(ReportingMessage.fromEvent(this, event));
-        return messages;
+        return Collections.singletonList(ReportingMessage.fromEvent(this, event).setAttributes(newAttributes));
     }
 
     @Override
@@ -569,27 +570,40 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             this.enableTypeDetection = enableTypeDetection;
         }
 
-        void parseValue(String key, String value) {
+        Object parseValue(String key, String value) {
             if (!enableTypeDetection) {
                 toString(key, value);
-                return;
+                return value;
             }
             if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
-                toBoolean(key, Boolean.parseBoolean(value));
+                boolean newBool = Boolean.parseBoolean(value);
+                toBoolean(key, newBool);
+                return newBool;
             } else {
                 try {
-                    double doubleValue = Double.parseDouble(value);
-                    if ((doubleValue % 1) == 0) {
-                        toInt(key, Integer.parseInt(value));
-                    } else {
+                    if (value.contains(".")) {
+                        double doubleValue = Double.parseDouble(value);
                         toDouble(key, doubleValue);
+                        return doubleValue;
+                    } else {
+                        long newLong = Long.parseLong(value);
+                        if (newLong <= Integer.MAX_VALUE && newLong >= Integer.MIN_VALUE) {
+                            int newInt = (int) newLong;
+                            toInt(key, newInt);
+                            return newInt;
+                        } else {
+                            toLong(key, newLong);
+                            return newLong;
+                        }
                     }
                 } catch (NumberFormatException nfe) {
                     toString(key, value);
+                    return value;
                 }
             }
         }
         abstract void toInt(String key, int value);
+        abstract void toLong(String key, long value);
         abstract void toDouble(String key, double value);
         abstract void toBoolean(String key, boolean value);
         abstract void toString(String key, String value);
@@ -605,6 +619,11 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
         @Override
         void toInt(String key, int value) {
+            properties.addProperty(key, value);
+        }
+
+        @Override
+        void toLong(String key, long value) {
             properties.addProperty(key, value);
         }
 
@@ -634,6 +653,11 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
         @Override
         void toInt(String key, int value) {
+            brazeUser.setCustomUserAttribute(key, value);
+        }
+
+        @Override
+        void toLong(String key, long value) {
             brazeUser.setCustomUserAttribute(key, value);
         }
 
