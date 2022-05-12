@@ -156,7 +156,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             BrazeUser user = Braze.getInstance(getContext()).getCurrentUser();
             BrazePropertiesSetter brazePropertiesSetter = new BrazePropertiesSetter(properties, enableTypeDetection);
             UserAttributeSetter userAttributeSetter = new UserAttributeSetter(user, enableTypeDetection);
-            for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
+            for (Map.Entry<String, String> entry : event.getCustomAttributeStrings().entrySet()) {
                 newAttributes.put(entry.getKey(), brazePropertiesSetter.parseValue(entry.getKey(), entry.getValue()));
                 Integer hashedKey = KitUtils.hashForFiltering(event.getEventType().toString() + event.getEventName() + entry.getKey());
                 Map<Integer, String> attributeMap = getConfiguration().getEventAttributesAddToUser();
