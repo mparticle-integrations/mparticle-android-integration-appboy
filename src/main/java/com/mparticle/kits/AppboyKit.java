@@ -9,7 +9,6 @@ import android.os.Handler;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.appboy.AppboyFirebaseMessagingService;
 import com.appboy.IBrazeEndpointProvider;
 import com.appboy.enums.Gender;
 import com.appboy.enums.Month;
@@ -20,6 +19,7 @@ import com.braze.BrazeUser;
 import com.braze.configuration.BrazeConfig;
 import com.braze.enums.BrazeSdkMetadata;
 import com.braze.models.outgoing.BrazeProperties;
+import com.braze.push.BrazeFirebaseMessagingService;
 import com.braze.push.BrazeNotificationUtils;
 import com.google.firebase.messaging.RemoteMessage;
 import com.mparticle.MPEvent;
@@ -429,7 +429,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     @Override
     public void onPushMessageReceived(Context context, Intent pushIntent) {
         if (Boolean.parseBoolean(getSettings().get(PUSH_ENABLED))) {
-            AppboyFirebaseMessagingService.handleBrazeRemoteMessage(context, new RemoteMessage(pushIntent.getExtras()));
+            BrazeFirebaseMessagingService.handleBrazeRemoteMessage(context, new RemoteMessage(pushIntent.getExtras()));
         }
     }
 
