@@ -11,6 +11,6 @@ on:
 jobs:
   daily-job:
     name: "Daily Check"
-    uses: mParticle/mparticle-workflows/.github/workflows/daily-cron.yml@stable
+    uses: mParticle/mparticle-workflows/.github/workflows/daily-cron.yml@main
     secrets:
       MP_DAILY_CRON_BOT: ${{ secrets.MP_INTEGRATIONS_SEMANTIC_RELEASE_BOT }}

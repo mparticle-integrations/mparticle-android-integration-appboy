@@ -1,6 +1,10 @@
 name: "Push"
-on: push
+
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   push-check:
     name: "Push Check"
-    uses: mParticle/mparticle-workflows/.github/workflows/android-kit-push.yml@stable
+    uses: mParticle/mparticle-workflows/.github/workflows/android-kit-push.yml@main

@@ -1,0 +1,12 @@
+name: "Dependabot Automerge"
+
+on:
+  workflow_run:
+    workflows: ["Pull Request"]
+    types:
+      - completed
+
+jobs:
+  pr-check:
+    name: "Dependabot Automerge"
+    uses: mParticle/mparticle-workflows/.github/workflows/dependabot-automerge.yml@main
