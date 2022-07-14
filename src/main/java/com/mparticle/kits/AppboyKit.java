@@ -81,7 +81,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
         String key = settings.get(APPBOY_KEY);
         if (KitUtils.isEmpty(key)) {
-            throw new IllegalArgumentException("Appboy key is empty.");
+            throw new IllegalArgumentException("Braze key is empty.");
         }
 
         //try to get endpoint from the host setting
@@ -95,7 +95,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             try {
                 this.enableTypeDetection = Boolean.parseBoolean(enableDetectionType);
             } catch (Exception e) {
-                Logger.warning("Appboy, unable to parse \"enableDetectionType\"");
+                Logger.warning("Braze, unable to parse \"enableDetectionType\"");
             }
         }
 
@@ -249,8 +249,8 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                     BrazeProperties brazeProperties = new BrazeProperties(new JSONObject().put("Transaction ID", event.getTransactionAttributes().getId()).put("products", productArray));
                     Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
                     messages.add(ReportingMessage.fromEvent(this, event));
-                } catch (Exception e) {
-                    Logger.warning("Failed to call logCustomEvent to Appboy kit: " + e.toString());
+                } catch (JSONException e) {
+                    Logger.warning("Failed to call logCustomEvent to Braze kit: " + e.toString());
                 }
             }
             queueDataFlush();
