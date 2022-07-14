@@ -30,6 +30,10 @@ import com.mparticle.commerce.Product;
 import com.mparticle.identity.MParticleUser;
 import com.mparticle.internal.Logger;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -48,6 +52,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
+    static final String EXPAND_NON_PURCHASE_COMMERCE_EVENTS = "expandNonPurchaseCommerceEvents";
     static final String USER_IDENTIFICATION_TYPE = "userIdentificationType";
     static final String ENABLE_TYPE_DETECTION = "enableTypeDetection";
 
@@ -62,6 +67,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
     private boolean forwardScreenViews = false;
+    private boolean expandNonPurchaseCommerceEvents = true;
     boolean enableTypeDetection = false;
 
     public static boolean setDefaultAppboyLifecycleCallbackListener = true;
@@ -94,6 +100,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
+        expandNonPurchaseCommerceEvents = Boolean.parseBoolean(settings.get(EXPAND_NON_PURCHASE_COMMERCE_EVENTS));
         BrazeConfig config = new BrazeConfig.Builder().setApiKey(key)
             .setSdkFlavor(SdkFlavor.MPARTICLE)
             .setSdkMetadata(EnumSet.of(BrazeSdkMetadata.MPARTICLE))
@@ -222,9 +229,25 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
         List<MPEvent> eventList = CommerceEventUtils.expand(event);
         if (eventList != null) {
-            for (int i = 0; i < eventList.size(); i++) {
+            if (expandNonPurchaseCommerceEvents) {
+                for (int i = 0; i < eventList.size(); i++) {
+                    try {
+                        logEvent(eventList.get(i));
+                        messages.add(ReportingMessage.fromEvent(this, event));
+                    } catch (Exception e) {
+                        Logger.warning("Failed to call logCustomEvent to Braze kit: " + e.toString());
+                    }
+                }
+            } else {
+                JSONArray productArray = new JSONArray();
+                for (int i = 0; i < eventList.size(); i++) {
+                    Map<String, Object> newAttributes = eventList.get(i).getCustomAttributes();
+                    newAttributes.put("custom attributes", event.getCustomAttributes());
+                    productArray.put(newAttributes);
+                }
                 try {
-                    logEvent(eventList.get(i));
+                    BrazeProperties brazeProperties = new BrazeProperties(new JSONObject().put("Transaction ID", event.getTransactionAttributes().getId()).put("products", productArray));
+                    Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
                     messages.add(ReportingMessage.fromEvent(this, event));
                 } catch (Exception e) {
                     Logger.warning("Failed to call logCustomEvent to Appboy kit: " + e.toString());
