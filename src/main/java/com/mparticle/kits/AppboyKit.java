@@ -427,6 +427,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
             }
         };
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted);
+        purchaseProperties.addProperty("custom_attributes", event.getCustomAttributes());
 
         String currencyValue = currency[0];
         if (KitUtils.isEmpty(currencyValue)) {
