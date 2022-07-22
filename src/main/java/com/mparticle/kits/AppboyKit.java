@@ -246,7 +246,12 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                     productArray.put(newAttributes);
                 }
                 try {
-                    BrazeProperties brazeProperties = new BrazeProperties(new JSONObject().put("Transaction ID", event.getTransactionAttributes().getId()).put("products", productArray));
+                    JSONObject json = new JSONObject().put("products", productArray);
+                    TransactionAttributes transactionAttributes = event.getTransactionAttributes();
+                    if (transactionAttributes != null) {
+                        json.put("Transaction ID",  transactionAttributes.getId();
+                    }
+                    BrazeProperties brazeProperties = new BrazeProperties(json);
                     Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
                     messages.add(ReportingMessage.fromEvent(this, event));
                 } catch (JSONException e) {
