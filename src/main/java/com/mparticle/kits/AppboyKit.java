@@ -52,7 +52,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
 
     static final String APPBOY_KEY = "apiKey";
     static final String FORWARD_SCREEN_VIEWS = "forwardScreenViews";
-    static final String EXPAND_NON_PURCHASE_COMMERCE_EVENTS = "expandNonPurchaseCommerceEvents";
+    static final String BUNDLE_NON_PURCHASE_COMMERCE_EVENTS = "bundleNonPurchaseCommerceEvents";
     static final String USER_IDENTIFICATION_TYPE = "userIdentificationType";
     static final String ENABLE_TYPE_DETECTION = "enableTypeDetection";
 
@@ -67,7 +67,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
     private Runnable dataFlushRunnable;
     final private static int FLUSH_DELAY = 5000;
     private boolean forwardScreenViews = false;
-    private boolean expandNonPurchaseCommerceEvents = true;
+    private boolean bundleNonPurchaseCommerceEvents = false;
     boolean enableTypeDetection = false;
 
     public static boolean setDefaultAppboyLifecycleCallbackListener = true;
@@ -100,7 +100,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
 
         forwardScreenViews = Boolean.parseBoolean(settings.get(FORWARD_SCREEN_VIEWS));
-        expandNonPurchaseCommerceEvents = Boolean.parseBoolean(settings.get(EXPAND_NON_PURCHASE_COMMERCE_EVENTS));
+        bundleNonPurchaseCommerceEvents = Boolean.parseBoolean(settings.get(BUNDLE_NON_PURCHASE_COMMERCE_EVENTS));
         BrazeConfig config = new BrazeConfig.Builder().setApiKey(key)
             .setSdkFlavor(SdkFlavor.MPARTICLE)
             .setSdkMetadata(EnumSet.of(BrazeSdkMetadata.MPARTICLE))
@@ -229,7 +229,7 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
         }
         List<MPEvent> eventList = CommerceEventUtils.expand(event);
         if (eventList != null) {
-            if (expandNonPurchaseCommerceEvents) {
+            if (!bundleNonPurchaseCommerceEvents) {
                 for (int i = 0; i < eventList.size(); i++) {
                     try {
                         logEvent(eventList.get(i));
