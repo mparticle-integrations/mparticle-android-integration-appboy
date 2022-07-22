@@ -242,6 +242,9 @@ public class AppboyKit extends KitIntegration implements KitIntegration.Attribut
                 JSONArray productArray = new JSONArray();
                 for (int i = 0; i < eventList.size(); i++) {
                     Map<String, Object> newAttributes = eventList.get(i).getCustomAttributes();
+                    if (newAttributes == null) {
+                        newAttributes = new HashMap<>();
+                    }
                     newAttributes.put("custom attributes", event.getCustomAttributes());
                     productArray.put(newAttributes);
                 }
