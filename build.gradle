@@ -1,5 +1,6 @@
 buildscript {
-    if (!project.hasProperty('version') || project.version.equals('unspecified')) {
+    ext.kotlin_version = '1.7.0'
+    if (!project.hasProperty('version') || project.version == 'unspecified') {
         project.version = '+'
     }
 
@@ -11,10 +12,13 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:7.2.1'
         classpath 'com.mparticle:android-kit-plugin:' + project.version
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.0'
+
     }
 }
-
+apply plugin: "kotlin-android"
 apply plugin: 'com.mparticle.kit'
+
 
 android {
     defaultConfig {
@@ -29,11 +33,15 @@ android {
 
 repositories {
     maven { url "https://appboy.github.io/appboy-android-sdk/sdk" }
+    mavenCentral()
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.12'
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
     api 'com.appboy:android-sdk-ui:21.0.0'
     testImplementation  files('libs/java-json.jar')
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 }
