@@ -22,10 +22,14 @@ import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Product
+import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
 import com.mparticle.kits.KitIntegration.*
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
@@ -36,13 +40,13 @@ import java.util.*
 open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     KitIntegration.EventListener, PushListener, IdentityListener {
 
-
     var enableTypeDetection = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
     val dataFlushHandler = Handler()
     private var dataFlushRunnable: Runnable? = null
     private var forwardScreenViews = false
+    private var bundleNonPurchaseCommerceEvents = false
     private lateinit var updatedInstanceId: String
 
 
@@ -54,7 +58,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         context: Context
     ): List<ReportingMessage>? {
         val key = settings[APPBOY_KEY]
-        require(!KitUtils.isEmpty(key)) { "Appboy key is empty." }
+        require(!KitUtils.isEmpty(key)) { "Braze key is empty." }
 
         //try to get endpoint from the host setting
         val authority = settings[HOST]
@@ -66,10 +70,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             try {
                 enableTypeDetection = enableDetectionType.toBoolean()
             } catch (e: Exception) {
-                Logger.warning("Appboy, unable to parse \"enableDetectionType\"")
+                Logger.warning("Braze, unable to parse \"enableDetectionType\"")
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
+        bundleNonPurchaseCommerceEvents = settings.get(BUNDLE_NON_PURCHASE_COMMERCE_EVENTS).toBoolean()
         if (key != null) {
             val config = BrazeConfig.Builder().setApiKey(key)
                 .setSdkFlavor(SdkFlavor.MPARTICLE)
@@ -208,12 +213,33 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
         val eventList = CommerceEventUtils.expand(event)
         if (eventList != null) {
-            for (i in eventList.indices) {
+            if (!bundleNonPurchaseCommerceEvents) {
+                eventList.forEachIndexed { index,element ->
+                    try {
+                        logEvent(eventList.get(index));
+                        messages.add(ReportingMessage.fromEvent(this, event))
+                    } catch (e: Exception) {
+                        Logger.warning("Failed to call logCustomEvent to Braze kit: ${e}")
+                    }
+                }
+            } else {
+                val productArray = JSONArray();
+                eventList.forEachIndexed { index,element ->
+                    val newAttributes = eventList.get(index).getCustomAttributes() ?: HashMap()
+                    newAttributes.put("custom attributes", event.getCustomAttributes())
+                    productArray.put(newAttributes);
+                }
                 try {
-                    logEvent(eventList[i])
-                    messages.add(ReportingMessage.fromEvent(this, event))
-                } catch (e: Exception) {
-                    Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
+                    val json = JSONObject().put("products", productArray)
+                    val transactionAttributes = event.getTransactionAttributes()
+                    transactionAttributes?.let {
+                        json.put("Transaction ID",  transactionAttributes.id)
+                    }
+                    val brazeProperties = BrazeProperties(json);
+                    Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
+                    messages.add(ReportingMessage.fromEvent(this, event));
+                } catch (jse: JSONException) {
+                    Logger.warning("Failed to call logCustomEvent to Braze kit: ${jse}");
                 }
             }
             queueDataFlush()
@@ -379,6 +405,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
+        purchaseProperties.addProperty("custom_attributes", event?.getCustomAttributes() ?: "");
         var currencyValue = currency[0]
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
@@ -640,6 +667,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     companion object {
         const val APPBOY_KEY = "apiKey"
         const val FORWARD_SCREEN_VIEWS = "forwardScreenViews"
+        const val BUNDLE_NON_PURCHASE_COMMERCE_EVENTS = "bundleNonPurchaseCommerceEvents"
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
         const val HOST = "host"
