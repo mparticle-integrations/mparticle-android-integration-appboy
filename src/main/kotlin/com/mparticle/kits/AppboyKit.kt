@@ -22,10 +22,14 @@ import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Product
+import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
 import com.mparticle.kits.KitIntegration.*
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,7 +46,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     val dataFlushHandler = Handler()
     private var dataFlushRunnable: Runnable? = null
     private var forwardScreenViews = false
-    private val bundleNonPurchaseCommerceEvents = false
+    private var bundleNonPurchaseCommerceEvents = false
     private lateinit var updatedInstanceId: String
 
 
@@ -210,35 +214,32 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val eventList = CommerceEventUtils.expand(event)
         if (eventList != null) {
             if (!bundleNonPurchaseCommerceEvents) {
-                for (int i = 0; i < eventList.size(); i++) {
+                eventList.forEachIndexed { index,element ->
                     try {
-                        logEvent(eventList.get(i));
-                        messages.add(ReportingMessage.fromEvent(this, event));
-                    } catch (Exception e) {
-                        Logger.warning("Failed to call logCustomEvent to Braze kit: " + e.toString());
+                        logEvent(eventList.get(index));
+                        messages.add(ReportingMessage.fromEvent(this, event))
+                    } catch (e: Exception) {
+                        Logger.warning("Failed to call logCustomEvent to Braze kit: ${e}")
                     }
                 }
             } else {
-                JSONArray productArray = new JSONArray();
-                for (int i = 0; i < eventList.size(); i++) {
-                    Map<String, Object> newAttributes = eventList.get(i).getCustomAttributes();
-                    if (newAttributes == null) {
-                        newAttributes = new HashMap<>();
-                    }
-                    newAttributes.put("custom attributes", event.getCustomAttributes());
+                val productArray = JSONArray();
+                eventList.forEachIndexed { index,element ->
+                    val newAttributes = eventList.get(index).getCustomAttributes() ?: HashMap()
+                    newAttributes.put("custom attributes", event.getCustomAttributes())
                     productArray.put(newAttributes);
                 }
                 try {
-                    JSONObject json = new JSONObject().put("products", productArray);
-                    TransactionAttributes transactionAttributes = event.getTransactionAttributes();
-                    if (transactionAttributes != null) {
-                        json.put("Transaction ID",  transactionAttributes.getId();
+                    val json = JSONObject().put("products", productArray)
+                    val transactionAttributes = event.getTransactionAttributes()
+                    transactionAttributes?.let {
+                        json.put("Transaction ID",  transactionAttributes.id)
                     }
-                    BrazeProperties brazeProperties = new BrazeProperties(json);
+                    val brazeProperties = BrazeProperties(json);
                     Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
                     messages.add(ReportingMessage.fromEvent(this, event));
-                } catch (JSONException jse) {
-                    Logger.warning("Failed to call logCustomEvent to Braze kit: " + e.toString());
+                } catch (jse: JSONException) {
+                    Logger.warning("Failed to call logCustomEvent to Braze kit: ${jse}");
                 }
             }
             queueDataFlush()
