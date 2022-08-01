@@ -15,7 +15,7 @@ import com.braze.configuration.BrazeConfig
 import com.braze.enums.BrazeSdkMetadata
 import com.braze.models.outgoing.BrazeProperties
 import com.braze.push.BrazeFirebaseMessagingService
-import com.braze.push.BrazeNotificationUtils.isAppboyPushMessage
+import com.braze.push.BrazeNotificationUtils.isBrazePushMessage
 import com.google.firebase.messaging.RemoteMessage
 import com.mparticle.MPEvent
 import com.mparticle.MParticle.IdentityType
@@ -216,18 +216,18 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             if (!bundleNonPurchaseCommerceEvents) {
                 eventList.forEachIndexed { index,element ->
                     try {
-                        logEvent(eventList.get(index));
+                        logEvent(eventList.get(index))
                         messages.add(ReportingMessage.fromEvent(this, event))
                     } catch (e: Exception) {
                         Logger.warning("Failed to call logCustomEvent to Braze kit: ${e}")
                     }
                 }
             } else {
-                val productArray = JSONArray();
+                val productArray = JSONArray()
                 eventList.forEachIndexed { index,element ->
                     val newAttributes = eventList.get(index).getCustomAttributes() ?: HashMap()
                     newAttributes.put("custom attributes", event.getCustomAttributes())
-                    productArray.put(newAttributes);
+                    productArray.put(newAttributes)
                 }
                 try {
                     val json = JSONObject().put("products", productArray)
@@ -235,11 +235,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     transactionAttributes?.let {
                         json.put("Transaction ID",  transactionAttributes.id)
                     }
-                    val brazeProperties = BrazeProperties(json);
-                    Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties);
-                    messages.add(ReportingMessage.fromEvent(this, event));
+                    val brazeProperties = BrazeProperties(json)
+                    Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties)
+                    messages.add(ReportingMessage.fromEvent(this, event))
                 } catch (jse: JSONException) {
-                    Logger.warning("Failed to call logCustomEvent to Braze kit: ${jse}");
+                    Logger.warning("Failed to call logCustomEvent to Braze kit: ${jse}")
                 }
             }
             queueDataFlush()
@@ -405,7 +405,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
-        purchaseProperties.addProperty("custom_attributes", event?.getCustomAttributes() ?: "");
+        purchaseProperties.addProperty("custom_attributes", event?.getCustomAttributes() ?: "")
         var currencyValue = currency[0]
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
@@ -421,7 +421,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun willHandlePushMessage(intent: Intent): Boolean {
         return if ((settings[PUSH_ENABLED]).toBoolean()) {
             false
-        } else isAppboyPushMessage(intent)
+        } else intent.isBrazePushMessage()
     }
 
     override fun onPushMessageReceived(context: Context, pushIntent: Intent) {
