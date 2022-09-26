@@ -1,18 +1,16 @@
 package com.braze
 
 import android.content.Context
-import com.mparticle.kits.BrazePurchase
-import java.util.ArrayList
-import java.util.HashMap
 import com.braze.configuration.BrazeConfig
 import com.braze.models.outgoing.BrazeProperties
+import com.mparticle.kits.BrazePurchase
 import java.math.BigDecimal
 
-object Braze {
+class Braze {
 
-     val currentUser = BrazeUser()
-     val purchases: MutableList<BrazePurchase> = ArrayList()
-     val events: MutableMap<String, BrazeProperties> = HashMap()
+    fun getCurrentUser(): BrazeUser {
+        return Companion.currentUser
+    }
 
     fun logCustomEvent(key: String, brazeProperties: BrazeProperties) {
         events[key] = brazeProperties
@@ -28,20 +26,24 @@ object Braze {
         purchases.add(BrazePurchase(sku, currency, unitPrice, quantity, purchaseProperties))
     }
 
-    fun clearPurchases() {
-        purchases.clear()
+    companion object {
+        val purchases: MutableList<BrazePurchase> = ArrayList()
+        val events: MutableMap<String, BrazeProperties> = HashMap()
+
+        fun clearPurchases() {
+            purchases.clear()
+        }
+
+        fun clearEvents() {
+            events.clear()
+        }
+
+        val currentUser = BrazeUser()
+
+        @JvmStatic
+        fun configure(context: Context?, config: BrazeConfig?) = true
+
+        @JvmStatic
+        fun getInstance(context: Context?): Braze = Braze()
     }
-
-    fun clearEvents() {
-        events.clear()
-    }
-
-    @JvmStatic
-    fun configure(context: Context?, config: BrazeConfig?) = true
-
-
-    @JvmStatic
-    //Mocks getInstance method in actual Braze lib.
-    fun getInstance(context: Context?): Braze = this
-
 }
