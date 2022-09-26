@@ -9,6 +9,7 @@ class BrazeUser {
     var dobYear = -1
     var dobMonth: Month? = null
     var dobDay = -1
+
     fun setDateOfBirth(year: Int, month: Month?, day: Int): Boolean {
         dobYear = year
         dobMonth = month
@@ -18,8 +19,6 @@ class BrazeUser {
 
     val customAttributeArray = HashMap <String, MutableList<String>>()
     val customUserAttributes = HashMap<String, Any>()
-
-
 
     fun addToCustomAttributeArray(key: String, value: String): Boolean {
         var customArray = customAttributeArray[key]
@@ -33,7 +32,7 @@ class BrazeUser {
 
     fun removeFromCustomAttributeArray(key: String, value: String): Boolean {
         return try {
-            customAttributeArray[key]!!.remove(value)
+            customAttributeArray[key]?.remove(value)
             true
         } catch (npe: NullPointerException) {
             false

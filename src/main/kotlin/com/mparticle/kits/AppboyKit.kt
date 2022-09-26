@@ -22,7 +22,6 @@ import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Product
-import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
@@ -43,7 +42,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     var enableTypeDetection = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
-    val dataFlushHandler = Handler()
+    private val dataFlushHandler = Handler()
     private var dataFlushRunnable: Runnable? = null
     private var forwardScreenViews = false
     private var bundleNonPurchaseCommerceEvents = false
@@ -74,7 +73,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
-        bundleNonPurchaseCommerceEvents = settings.get(BUNDLE_NON_PURCHASE_COMMERCE_EVENTS).toBoolean()
+        bundleNonPurchaseCommerceEvents = settings[BUNDLE_NON_PURCHASE_COMMERCE_EVENTS].toBoolean()
         if (key != null) {
             val config = BrazeConfig.Builder().setApiKey(key)
                 .setSdkFlavor(SdkFlavor.MPARTICLE)
@@ -131,7 +130,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             val properties = BrazeProperties()
             val user = Braze.getInstance(context).currentUser
             val brazePropertiesSetter = BrazePropertiesSetter(properties, enableTypeDetection)
-            val userAttributeSetter = UserAttributeSetter(user, enableTypeDetection)
+            val userAttributeSetter = user?.let { UserAttributeSetter(it, enableTypeDetection) }
             event.customAttributeStrings?.let { it ->
                 for ((key, value) in it) {
                     newAttributes[key] = brazePropertiesSetter.parseValue(key, value)
@@ -139,13 +138,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                         KitUtils.hashForFiltering(event.eventType.toString() + event.eventName + key)
 
                     configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
-                        user.addToCustomAttributeArray(it, value)
+                        user?.addToCustomAttributeArray(it, value)
                     }
                     configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
-                        user.removeFromCustomAttributeArray(it, value)
+                        user?.removeFromCustomAttributeArray(it, value)
                     }
                     configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
-                        userAttributeSetter.parseValue(it, value)
+                        userAttributeSetter?.parseValue(it, value)
                     }
                 }
             }
@@ -214,32 +213,32 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val eventList = CommerceEventUtils.expand(event)
         if (eventList != null) {
             if (!bundleNonPurchaseCommerceEvents) {
-                eventList.forEachIndexed { index,element ->
+                eventList.forEachIndexed { index, _ ->
                     try {
-                        logEvent(eventList.get(index))
+                        logEvent(eventList[index])
                         messages.add(ReportingMessage.fromEvent(this, event))
                     } catch (e: Exception) {
-                        Logger.warning("Failed to call logCustomEvent to Braze kit: ${e}")
+                        Logger.warning("Failed to call logCustomEvent to Braze kit: $e")
                     }
                 }
             } else {
                 val productArray = JSONArray()
-                eventList.forEachIndexed { index,element ->
-                    val newAttributes = eventList.get(index).getCustomAttributes() ?: HashMap()
-                    newAttributes.put("custom attributes", event.getCustomAttributes())
+                eventList.forEachIndexed { index, _ ->
+                    val newAttributes = eventList[index].customAttributes ?: HashMap()
+                    newAttributes["custom attributes"] = event.customAttributes
                     productArray.put(newAttributes)
                 }
                 try {
                     val json = JSONObject().put("products", productArray)
-                    val transactionAttributes = event.getTransactionAttributes()
+                    val transactionAttributes = event.transactionAttributes
                     transactionAttributes?.let {
                         json.put("Transaction ID",  transactionAttributes.id)
                     }
                     val brazeProperties = BrazeProperties(json)
-                    Braze.getInstance(getContext()).logCustomEvent(eventList.get(0).getEventName(), brazeProperties)
+                    Braze.getInstance(context).logCustomEvent(eventList[0].eventName, brazeProperties)
                     messages.add(ReportingMessage.fromEvent(this, event))
                 } catch (jse: JSONException) {
-                    Logger.warning("Failed to call logCustomEvent to Braze kit: ${jse}")
+                    Logger.warning("Failed to call logCustomEvent to Braze kit: $jse")
                 }
             }
             queueDataFlush()
@@ -250,9 +249,9 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun setUserAttribute(keyIn: String, value: String) {
         var key = keyIn
         val user = Braze.getInstance(context).currentUser
-        val userAttributeSetter = UserAttributeSetter(user, enableTypeDetection)
+        val userAttributeSetter = user?.let { UserAttributeSetter(it, enableTypeDetection) }
 
-        user.apply {
+        user?.apply {
             when (key) {
                 UserAttributes.CITY -> setHomeCity(value)
                 UserAttributes.COUNTRY -> setCountry(value)
@@ -270,7 +269,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     if (key.startsWith("$")) {
                         key = key.substring(1)
                     }
-                    userAttributeSetter.parseValue(key, value)
+                    userAttributeSetter?.parseValue(key, value)
                 }
             }
         }
@@ -307,7 +306,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun setUserAttributeList(key: String, list: List<String>) {
         val user = Braze.getInstance(context).currentUser
         val array = list.toTypedArray<String?>()
-        user.setCustomAttributeArray(key, array)
+        user?.setCustomAttributeArray(key, array)
         queueDataFlush()
     }
 
@@ -341,22 +340,22 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val user = Braze.getInstance(context).currentUser
 
         if (UserAttributes.CITY == key) {
-            user.setHomeCity(null)
+            user?.setHomeCity(null)
         } else if (UserAttributes.COUNTRY == key) {
-            user.setCountry(null)
+            user?.setCountry(null)
         } else if (UserAttributes.FIRSTNAME == key) {
-            user.setFirstName(null)
+            user?.setFirstName(null)
         } //else if (UserAttributes.GENDER == key) {   //Braze SDK wont allow for gender parameter to be null.
         // user.setGender(null)}
         else if (UserAttributes.LASTNAME == key) {
-            user.setLastName(null)
+            user?.setLastName(null)
         } else if (UserAttributes.MOBILE_NUMBER == key) {
-            user.setPhoneNumber(null)
+            user?.setPhoneNumber(null)
         } else {
             if (key.startsWith("$")) {
                 key = key.substring(1)
             }
-            user.unsetCustomUserAttribute(key)
+            user?.unsetCustomUserAttribute(key)
         }
         queueDataFlush()
     }
@@ -405,15 +404,16 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
-        purchaseProperties.addProperty("custom_attributes", event?.getCustomAttributes() ?: "")
+        purchaseProperties.addProperty("custom_attributes", event?.customAttributes ?: "")
         var currencyValue = currency[0]
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
         }
-        Braze.getInstance(context).logPurchase(
+        Braze.Companion.getInstance(context).logPurchase(
             product.sku,
             currencyValue,
-            BigDecimal(product.unitPrice), product.quantity.toInt(),
+            BigDecimal(product.unitPrice),
+            product.quantity.toInt(),
             purchaseProperties
         )
     }
@@ -436,7 +436,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun onPushRegistration(instanceId: String, senderId: String): Boolean {
         return if (settings[PUSH_ENABLED].toBoolean()) {
             updatedInstanceId = instanceId
-            Braze.getInstance(context).registerAppboyPushMessages(instanceId)
+            Braze.getInstance(context).registeredPushToken
             queueDataFlush()
             true
         } else {
@@ -512,7 +512,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     protected open fun setEmail(email: String) {
         if (email != kitPreferences.getString(PREF_KEY_CURRENT_EMAIL, null)) {
             val user = Braze.getInstance(context).currentUser
-            user.setEmail(email)
+            user?.setEmail(email)
             queueDataFlush()
             kitPreferences.edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply()
         }
@@ -520,7 +520,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun onUserIdentified(mParticleUser: MParticleUser) {
         if (updatedInstanceId.isNotEmpty()) {
-            Braze.getInstance(context).registerAppboyPushMessages(updatedInstanceId)
+            Braze.getInstance(context).registeredPushToken
         }
     }
 
