@@ -260,6 +260,8 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 UserAttributes.MOBILE_NUMBER -> setPhoneNumber(value)
                 UserAttributes.ZIPCODE -> setCustomUserAttribute("Zip", value)
                 UserAttributes.AGE -> setDateOfBirth(key, value, user)
+                "email_subscribe" -> setEmailSubscriptionStatus(key, value, user)
+                "push_subscribe" -> setPushSubscriptionStatus(key, value, user)
                 "dob" -> useDobString(value, user)
                 UserAttributes.GENDER -> {
                     if (value.contains("fe")) setGender(Gender.FEMALE)
@@ -274,6 +276,32 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         queueDataFlush()
+    }
+
+    private fun setEmailSubscriptionStatus(key: String, value: String, user: BrazeUser){
+        if (key == "email_subscribe") {
+            when (value) {
+                "opted_in" -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                "unsubscribed" -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                "subscribed" -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                else -> {
+                    Logger.error("unable to set email_subscribe with invalid value: " + value)
+                }
+            }
+        }
+    }
+
+    private fun setPushSubscriptionStatus(key: String, value: String, user: BrazeUser){
+        if (key == "push_subscribe") {
+            when (value) {
+                "opted_in" -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                "unsubscribed" -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                "subscribed" -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                else -> {
+                    Logger.error("unable to set push_subscribe with invalid value: " + value)
+                }
+            }
+        }
     }
 
     private fun setDateOfBirth(key: String, value: String, user: BrazeUser) {
