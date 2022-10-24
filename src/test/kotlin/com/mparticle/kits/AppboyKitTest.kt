@@ -233,7 +233,7 @@ class AppboyKitTests {
         val errorMessage = arrayOfNulls<String>(1)
         Logger.setLogHandler(object : DefaultLogHandler() {
             override fun log(priority: LogLevel, error: Throwable?, messages: String) {
-                if (priority == LogLevel.ERROR) {
+                if (priority == LogLevel.WARNING) {
                     errorMessage[0] = messages
                 }
             }
