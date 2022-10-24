@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.7.20'
     if (!project.hasProperty('version') || project.version == 'unspecified') {
         project.version = '+'
     }
@@ -36,6 +36,6 @@ repositories {
 
 dependencies {
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
-    api 'com.appboy:android-sdk-ui:23.2.1'
+    api 'com.appboy:android-sdk-ui:23.3.0'
     testImplementation  files('libs/java-json.jar')
 }
