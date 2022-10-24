@@ -8,6 +8,7 @@ import android.os.Handler
 import com.appboy.enums.Gender
 import com.appboy.enums.Month
 import com.appboy.enums.SdkFlavor
+import com.appboy.enums.NotificationSubscriptionType
 import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
@@ -259,8 +260,35 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 UserAttributes.LASTNAME -> setLastName(value)
                 UserAttributes.MOBILE_NUMBER -> setPhoneNumber(value)
                 UserAttributes.ZIPCODE -> setCustomUserAttribute("Zip", value)
-                UserAttributes.AGE -> setDateOfBirth(key, value, user)
-                "dob" -> useDobString(value, user)
+                UserAttributes.AGE -> {
+                    val calendar = getCalendarMinusYears(value)
+                    if (calendar != null) {
+                        user.setDateOfBirth(calendar[Calendar.YEAR], Month.JANUARY, 1)
+                    } else {
+                        Logger.warning("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value)
+                    }
+                }
+                EMAIL_SUBSCRIBE -> {
+                    when (value) {
+                        OPTED_IN -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                        UNSUBSCRIBED -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                        SUBSCRIBED -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                        else -> {
+                            Logger.warning("unable to set email_subscribe with invalid value: " + value)
+                        }
+                    }
+                }
+                PUSH_SUBSCRIBE -> {
+                    when (value) {
+                        OPTED_IN -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                        UNSUBSCRIBED -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                        SUBSCRIBED -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                        else -> {
+                            Logger.warning("unable to set push_subscribe with invalid value: " + value)
+                        }
+                    }
+                }
+                DOB -> useDobString(value, user)
                 UserAttributes.GENDER -> {
                     if (value.contains("fe")) setGender(Gender.FEMALE)
                     else setGender(Gender.MALE)
@@ -276,17 +304,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         queueDataFlush()
     }
 
-    private fun setDateOfBirth(key: String, value: String, user: BrazeUser) {
-        if (UserAttributes.AGE == key) {
-            val calendar = getCalendarMinusYears(value)
-            if (calendar != null) {
-                user.setDateOfBirth(calendar[Calendar.YEAR], Month.JANUARY, 1)
-            } else {
-                Logger.error("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value)
-            }
-        }
-    }
-
     // Expected Date Format @"yyyy'-'MM'-'dd"
     private fun useDobString(value: String, user: BrazeUser) {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
@@ -299,7 +316,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             val day = calendar[Calendar.DAY_OF_MONTH]
             user.setDateOfBirth(year, month, day)
         } catch (e: Exception) {
-            Logger.error("unable to set DateOfBirth for \"dob\" = " + value + ". Exception: " + e.message)
+            Logger.warning("unable to set DateOfBirth for \"dob\" = " + value + ". Exception: " + e.message)
         }
     }
 
@@ -677,5 +694,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val PREF_KEY_CURRENT_EMAIL = "appboy::current_email"
         private const val FLUSH_DELAY = 5000
         var setDefaultAppboyLifecycleCallbackListener = true
+
+        private const val EMAIL_SUBSCRIBE = "email_subscribe"
+        private const val PUSH_SUBSCRIBE = "push_subscribe"
+        private const val DOB = "dob"
+
+        private const val OPTED_IN = "opted_in"
+        private const val UNSUBSCRIBED = "unsubscribed"
+        private const val SUBSCRIBED = "subscribed"
     }
 }
