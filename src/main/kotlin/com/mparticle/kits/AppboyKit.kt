@@ -453,7 +453,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun onPushRegistration(instanceId: String, senderId: String): Boolean {
         return if (settings[PUSH_ENABLED].toBoolean()) {
             updatedInstanceId = instanceId
-            Braze.getInstance(context).registeredPushToken
+            Braze.getInstance(context).registeredPushToken = instanceId
             queueDataFlush()
             true
         } else {
@@ -537,7 +537,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun onUserIdentified(mParticleUser: MParticleUser) {
         if (updatedInstanceId.isNotEmpty()) {
-            Braze.getInstance(context).registeredPushToken
+            Braze.getInstance(context).registeredPushToken = updatedInstanceId
         }
     }
 
