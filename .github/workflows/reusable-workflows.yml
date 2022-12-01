@@ -12,4 +12,4 @@ jobs:
     uses: mParticle/mparticle-workflows/.github/workflows/pr-title-check.yml@main
   pr-branch-target-gitflow:
     name: "Check PR for semantic target branch"
-    uses: mParticle/mparticle-workflows/.github/workflows/pr-branch-target-continuous.yml@main
+    uses: mParticle/mparticle-workflows/.github/workflows/pr-branch-target-gitflow.yml@main
