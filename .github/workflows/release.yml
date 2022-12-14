@@ -1,0 +1,21 @@
+name: "Release"
+
+on:
+
+  schedule:
+    - cron: "0 0 * * *"
+
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "Do a dry run to preview instead of a real release [true/false]"
+        required: true
+        default: "true"
+
+jobs:
+  release-kit:
+    name: "Release Kit"
+    uses: mParticle/mparticle-workflows/.github/workflows/android-kit-release.yml@ci/SQDSDKS-4888
+    secrets: inherit
+    with:
+      dryRun: ${{ github.event.inputs.dryRun }}
