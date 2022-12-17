@@ -15,7 +15,7 @@ on:
 jobs:
   release-kit:
     name: "Release Kit"
-    uses: mParticle/mparticle-workflows/.github/workflows/android-kit-release.yml@ci/SQDSDKS-4888
+    uses: mParticle/mparticle-workflows/.github/workflows/android-kit-release.yml@main
     secrets: inherit
     with:
       dryRun: ${{ github.event.inputs.dryRun }}
