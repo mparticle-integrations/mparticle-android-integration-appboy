@@ -18,4 +18,4 @@ jobs:
     uses: mParticle/mparticle-workflows/.github/workflows/android-kit-release.yml@main
     secrets: inherit
     with:
-      dryRun: ${{ github.event.inputs.dryRun }}
+      dryRun: ${{ github.event.inputs.dryRun || 'false' }}
