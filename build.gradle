@@ -49,6 +49,6 @@ repositories {
 
 dependencies {
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
-    api 'com.appboy:android-sdk-ui:23.3.0'
+    api 'com.appboy:android-sdk-ui:24.1.0'
     testImplementation  files('libs/java-json.jar')
 }
