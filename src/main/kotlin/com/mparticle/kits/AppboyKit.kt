@@ -436,7 +436,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     }
 
     override fun willHandlePushMessage(intent: Intent): Boolean {
-        return if ((settings[PUSH_ENABLED]).toBoolean()) {
+        return if (!(settings[PUSH_ENABLED].toBoolean())) {
             false
         } else intent.isBrazePushMessage()
     }
