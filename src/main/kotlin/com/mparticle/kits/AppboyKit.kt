@@ -46,7 +46,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     private val dataFlushHandler = Handler()
     private var dataFlushRunnable: Runnable? = null
     private var forwardScreenViews = false
-    private var bundleNonPurchaseCommerceEvents = false
     private lateinit var updatedInstanceId: String
 
 
@@ -74,7 +73,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
-        bundleNonPurchaseCommerceEvents = settings[BUNDLE_NON_PURCHASE_COMMERCE_EVENTS].toBoolean()
         if (key != null) {
             val config = BrazeConfig.Builder().setApiKey(key)
                 .setSdkFlavor(SdkFlavor.MPARTICLE)
@@ -213,33 +211,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
         val eventList = CommerceEventUtils.expand(event)
         if (eventList != null) {
-            if (!bundleNonPurchaseCommerceEvents) {
-                eventList.forEachIndexed { index, _ ->
-                    try {
-                        logEvent(eventList[index])
-                        messages.add(ReportingMessage.fromEvent(this, event))
-                    } catch (e: Exception) {
-                        Logger.warning("Failed to call logCustomEvent to Braze kit: $e")
-                    }
-                }
-            } else {
-                val productArray = JSONArray()
-                eventList.forEachIndexed { index, _ ->
-                    val newAttributes = eventList[index].customAttributes ?: HashMap()
-                    newAttributes["custom attributes"] = event.customAttributes
-                    productArray.put(newAttributes)
-                }
+            for (i in eventList.indices) {
                 try {
-                    val json = JSONObject().put("products", productArray)
-                    val transactionAttributes = event.transactionAttributes
-                    transactionAttributes?.let {
-                        json.put("Transaction ID",  transactionAttributes.id)
-                    }
-                    val brazeProperties = BrazeProperties(json)
-                    Braze.getInstance(context).logCustomEvent(eventList[0].eventName, brazeProperties)
+                    logEvent(eventList[i])
                     messages.add(ReportingMessage.fromEvent(this, event))
-                } catch (jse: JSONException) {
-                    Logger.warning("Failed to call logCustomEvent to Braze kit: $jse")
+                } catch (e: Exception) {
+                    Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
                 }
             }
             queueDataFlush()
@@ -421,7 +398,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
-        purchaseProperties.addProperty("custom_attributes", event?.customAttributes ?: "")
         var currencyValue = currency[0]
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
@@ -684,7 +660,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     companion object {
         const val APPBOY_KEY = "apiKey"
         const val FORWARD_SCREEN_VIEWS = "forwardScreenViews"
-        const val BUNDLE_NON_PURCHASE_COMMERCE_EVENTS = "bundleNonPurchaseCommerceEvents"
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
         const val HOST = "host"
