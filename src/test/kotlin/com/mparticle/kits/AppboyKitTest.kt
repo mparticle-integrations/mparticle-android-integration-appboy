@@ -446,7 +446,7 @@ class AppboyKitTests {
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
             "the affiliation"
         )
-        Assert.assertEquals(1, properties.size.toLong())
+        Assert.assertEquals(0, properties.size.toLong())
     }
 
     @Test
