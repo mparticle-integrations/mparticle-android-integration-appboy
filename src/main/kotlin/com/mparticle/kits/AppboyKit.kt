@@ -5,10 +5,10 @@ import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
-import com.appboy.enums.Gender
-import com.appboy.enums.Month
-import com.appboy.enums.SdkFlavor
-import com.appboy.enums.NotificationSubscriptionType
+import com.braze.enums.Gender
+import com.braze.enums.Month
+import com.braze.enums.SdkFlavor
+import com.braze.enums.NotificationSubscriptionType
 import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser

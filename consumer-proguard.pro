@@ -2,7 +2,7 @@
 
 -dontwarn com.amazon.device.messaging.**
 -dontwarn bo.app.**
--dontwarn com.appboy.ui.**
+-dontwarn com.braze.ui.**
 -dontwarn com.google.android.gms.**
 -keep class bo.app.** { *; }
--keep class com.appboy.** { *; }
+-keep class com.braze.** { *; }

@@ -1,6 +1,6 @@
 package com.mparticle.kits
 
-import com.appboy.enums.Month
+import com.braze.enums.Month
 import com.braze.Braze
 import com.mparticle.MPEvent
 import com.mparticle.MParticle

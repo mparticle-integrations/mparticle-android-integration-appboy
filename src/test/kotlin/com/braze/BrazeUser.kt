@@ -1,6 +1,6 @@
 package com.braze
 
-import com.appboy.enums.Month
+import com.braze.enums.Month
 import java.util.HashMap
 import java.util.ArrayList
 import java.lang.NullPointerException
