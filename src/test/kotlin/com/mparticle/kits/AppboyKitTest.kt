@@ -2,12 +2,15 @@ package com.mparticle.kits
 
 import com.braze.enums.Month
 import com.braze.Braze
+import com.braze.models.outgoing.BrazeProperties
 import com.mparticle.MPEvent
 import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.LogLevel
 import com.mparticle.commerce.CommerceEvent
+import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
+import com.mparticle.commerce.Promotion
 import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.IdentityApi
 import com.mparticle.identity.MParticleUser
@@ -405,7 +408,7 @@ class AppboyKitTests {
         val product = Product.Builder("product name", "sku1", 4.5)
             .quantity(5.0)
             .build()
-        val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product)
+        val commerceEvent = CommerceEvent.Builder(Product.PURCHASE, product)
             .currency("Moon Dollars")
             .productListName("product list name")
             .productListSource("the source")
@@ -446,7 +449,172 @@ class AppboyKitTests {
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
             "the affiliation"
         )
-        Assert.assertEquals(0, properties.size.toLong())
+        val emptyAttributes = HashMap<String, String>()
+        Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
+    fun testEnhancedPurchase() {
+        val emptyAttributes = HashMap<String, String>()
+        val kit = MockAppboyKit()
+        val customAttributes = HashMap<String, String>()
+        customAttributes["key1"] = "value1"
+        customAttributes["key #2"] = "value #3"
+        val transactionAttributes = TransactionAttributes("the id")
+            .setTax(100.0)
+            .setShipping(12.0)
+            .setRevenue(99.0)
+            .setCouponCode("coupon code")
+            .setAffiliation("the affiliation")
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .quantity(5.0)
+            .build()
+        val commerceEvent = CommerceEvent.Builder(Product.PURCHASE, product)
+            .currency("Moon Dollars")
+            .productListName("product list name")
+            .productListSource("the source")
+            .customAttributes(customAttributes)
+            .transactionAttributes(transactionAttributes)
+            .build()
+        kit.logOrderLevelTransaction(commerceEvent)
+        val braze = Braze
+        val purchases = braze.purchases
+        Assert.assertEquals(1, purchases.size.toLong())
+        val purchase = purchases[0]
+        Assert.assertEquals("Moon Dollars", purchase.currency)
+        Assert.assertEquals(1.0, purchase.quantity.toDouble(), 0.01)
+        Assert.assertEquals("eCommerce - purchase", purchase.sku)
+        Assert.assertEquals(BigDecimal(99.0), purchase.unitPrice)
+        Assert.assertNotNull(purchase.purchaseProperties)
+        val properties = purchase.purchaseProperties.properties
+        val productArray = properties.remove(AppboyKit.PRODUCT_KEY)
+        Assert.assertTrue(productArray is Array<*>)
+        if (productArray is Array<*>) {
+            Assert.assertEquals(1, productArray.size.toLong())
+            val productBrazeProperties = productArray[0]
+            if (productBrazeProperties is BrazeProperties) {
+                val productProperties = productBrazeProperties.properties
+                Assert.assertEquals(productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT), 22.5)
+                Assert.assertEquals(productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE), 4.5)
+                Assert.assertEquals(productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY), 5.0)
+                Assert.assertEquals(productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_ID), "sku1")
+                Assert.assertEquals(productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME), "product name")
+                Assert.assertEquals(emptyAttributes, productProperties)
+            }
+        }
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_SHIPPING), 12.0)
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TAX), 100.0)
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE),
+            "coupon code"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
+            "the affiliation"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_LIST_SOURCE),
+            "the source"
+        )
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 99.0)
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_ACTION_LIST),
+            "product list name"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_TRANSACTION_ID),
+            "the id"
+        )
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+        Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
+    fun testPromotion() {
+        val kit = MockAppboyKit()
+        kit.configuration = MockKitConfiguration()
+        val customAttributes = HashMap<String, String>()
+        customAttributes["key1"] = "value1"
+        customAttributes["key #2"] = "value #3"
+        val promotion = Promotion().apply {
+            id = "my_promo_1"
+            creative = "sale_banner_1"
+            name = "App-wide 50% off sale"
+            position ="dashboard_bottom"
+        }
+        val commerceEvent = CommerceEvent.Builder(Promotion.VIEW, promotion)
+            .customAttributes(customAttributes)
+            .build()
+        val eventList = CommerceEventUtils.expand(commerceEvent)
+        Assert.assertEquals(1, eventList.size.toLong())
+
+        eventList?.forEach {
+            kit.logEvent(it)
+        }
+        val braze = Braze
+        val events = braze.events
+        Assert.assertEquals(1, events.size.toLong())
+        val event = events.values.iterator().next()
+        Assert.assertNotNull(event.properties)
+        val properties = event.properties
+
+        Assert.assertEquals(properties.remove("Id"), "my_promo_1")
+        Assert.assertEquals(properties.remove("Name"), "App-wide 50% off sale")
+        Assert.assertEquals(properties.remove("Position"), "dashboard_bottom")
+        Assert.assertEquals(properties.remove("Creative"), "sale_banner_1")
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+
+        val emptyAttributes = HashMap<String, String>()
+        Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
+    fun testEnhancedPromotion() {
+        val emptyAttributes = HashMap<String, String>()
+        val kit = MockAppboyKit()
+        kit.configuration = MockKitConfiguration()
+        val customAttributes = HashMap<String, String>()
+        customAttributes["key1"] = "value1"
+        customAttributes["key #2"] = "value #3"
+        val promotion = Promotion().apply {
+            id = "my_promo_1"
+            creative = "sale_banner_1"
+            name = "App-wide 50% off sale"
+            position ="dashboard_bottom"
+        }
+        val commerceEvent = CommerceEvent.Builder(Promotion.VIEW, promotion)
+            .customAttributes(customAttributes)
+            .build()
+        kit.logOrderLevelTransaction(commerceEvent)
+        val braze = Braze
+        val events = braze.events
+        Assert.assertEquals(1, events.size.toLong())
+        val event = events.values.iterator().next()
+        Assert.assertNotNull(event.properties)
+        val properties = event.properties
+
+        val promotionArray = properties.remove(AppboyKit.PROMOTION_KEY)
+        Assert.assertTrue(promotionArray is Array<*>)
+        if (promotionArray is Array<*>) {
+            Assert.assertEquals(1, promotionArray.size.toLong())
+            val promotionBrazeProperties = promotionArray[0]
+            if (promotionBrazeProperties is BrazeProperties) {
+                val promotionProperties = promotionBrazeProperties.properties
+                Assert.assertEquals(promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_ID), "my_promo_1")
+                Assert.assertEquals(promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_NAME), "App-wide 50% off sale")
+                Assert.assertEquals(promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION), "dashboard_bottom")
+                Assert.assertEquals(promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE), "sale_banner_1")
+                Assert.assertEquals(emptyAttributes, promotionProperties)
+            }
+        }
+
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 0.0)
+
+        Assert.assertEquals(emptyAttributes, properties)
     }
 
     @Test
