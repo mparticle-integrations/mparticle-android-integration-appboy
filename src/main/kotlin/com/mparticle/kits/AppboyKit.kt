@@ -18,6 +18,7 @@ import com.mparticle.MPEvent
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
+import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
 import com.mparticle.commerce.Promotion
 import com.mparticle.identity.MParticleUser
@@ -489,6 +490,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             properties.addProperty(PROMOTION_KEY, promotionArray)
         }
 
+        val impressionList = event?.impressions
+        impressionList?.let {
+            val impressionArray = getImpressionListParameters(it)
+            properties.addProperty(IMPRESSION_KEY, impressionArray)
+        }
+
         val eventName = "eCommerce - %s"
         if (!KitUtils.isEmpty(event?.productAction) &&
             event?.productAction.equals(Product.PURCHASE,true)
@@ -506,7 +513,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             } else if (!KitUtils.isEmpty(event?.promotionAction)) {
                 Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.promotionAction), properties)
             } else {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, "unknown"), properties)
+                Braze.getInstance(context).logCustomEvent(String.format(eventName, "Impression"), properties)
             }
         }
     }
@@ -733,6 +740,22 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         return promotionArray
     }
 
+    fun getImpressionListParameters(impressionList: List<Impression>): Array<BrazeProperties?> {
+        val impressionArray = arrayOfNulls<BrazeProperties>(impressionList.count())
+        for ((i, impression) in impressionList.withIndex()) {
+            val impressionProperties = BrazeProperties()
+            impression.listName.let {
+                impressionProperties.addProperty("Product Impression List", it)
+            }
+            impression.products.let {
+                val productArray = getProductListParameters(it)
+                impressionProperties.addProperty(PRODUCT_KEY, productArray)
+            }
+            impressionArray[i] = impressionProperties
+        }
+        return impressionArray
+    }
+
     internal abstract class StringTypeParser(var enableTypeDetection: Boolean) {
         fun parseValue(key: String, value: String): Any {
             if (!enableTypeDetection) {
@@ -853,5 +876,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val CUSTOM_ATTRIBUTES_KEY = "custom_attributes"
         const val PRODUCT_KEY = "products"
         const val PROMOTION_KEY = "promotions"
+        const val IMPRESSION_KEY = "impressions"
     }
 }

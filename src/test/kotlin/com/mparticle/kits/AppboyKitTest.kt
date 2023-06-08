@@ -618,6 +618,122 @@ class AppboyKitTests {
     }
 
     @Test
+    fun testImpression() {
+        val kit = MockAppboyKit()
+        kit.configuration = MockKitConfiguration()
+        val customAttributes = HashMap<String, String>()
+        customAttributes["key1"] = "value1"
+        customAttributes["key #2"] = "value #3"
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .quantity(5.0)
+            .build()
+        val impression = Impression("Suggested Products List", product).let {
+            CommerceEvent.Builder(it).build()
+        }
+        val commerceEvent = CommerceEvent.Builder(impression)
+            .customAttributes(customAttributes)
+            .build()
+        val eventList = CommerceEventUtils.expand(commerceEvent)
+        Assert.assertEquals(1, eventList.size.toLong())
+
+        eventList?.forEach {
+            kit.logEvent(it)
+        }
+        val braze = Braze
+        val events = braze.events
+        Assert.assertEquals(1, events.size.toLong())
+        val event = events.values.iterator().next()
+        Assert.assertNotNull(event.properties)
+        val properties = event.properties
+
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT), "22.5")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME), "product name")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY), "5.0")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_ID), "sku1")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE), "4.5")
+        Assert.assertEquals(properties.remove("Product Impression List"), "Suggested Products List")
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+
+        val emptyAttributes = HashMap<String, String>()
+        Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
+    fun testEnhancedImpression() {
+        val emptyAttributes = HashMap<String, String>()
+        val kit = MockAppboyKit()
+        kit.configuration = MockKitConfiguration()
+        val customAttributes = HashMap<String, String>()
+        customAttributes["key1"] = "value1"
+        customAttributes["key #2"] = "value #3"
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .quantity(5.0)
+            .build()
+        val impression = Impression("Suggested Products List", product).let {
+            CommerceEvent.Builder(it).build()
+        }
+        val commerceEvent = CommerceEvent.Builder(impression)
+            .customAttributes(customAttributes)
+            .build()
+        kit.logOrderLevelTransaction(commerceEvent)
+        val braze = Braze
+        val events = braze.events
+        Assert.assertEquals(1, events.size.toLong())
+        val event = events.values.iterator().next()
+        Assert.assertNotNull(event.properties)
+        val properties = event.properties
+
+        val impressionArray = properties.remove(AppboyKit.IMPRESSION_KEY)
+        Assert.assertTrue(impressionArray is Array<*>)
+        if (impressionArray is Array<*>) {
+            Assert.assertEquals(1, impressionArray.size.toLong())
+            val impressionBrazeProperties = impressionArray[0]
+            if (impressionBrazeProperties is BrazeProperties) {
+                val impressionProperties = impressionBrazeProperties.properties
+                Assert.assertEquals(impressionProperties.remove("Product Impression List"), "Suggested Products List")
+                val productArray = impressionProperties.remove(AppboyKit.PRODUCT_KEY)
+                Assert.assertTrue(productArray is Array<*>)
+                if (productArray is Array<*>) {
+                    Assert.assertEquals(1, productArray.size.toLong())
+                    val productBrazeProperties = productArray[0]
+                    if (productBrazeProperties is BrazeProperties) {
+                        val productProperties = productBrazeProperties.properties
+                        Assert.assertEquals(
+                            productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT),
+                            22.5
+                        )
+                        Assert.assertEquals(
+                            productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME),
+                            "product name"
+                        )
+                        Assert.assertEquals(
+                            productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY),
+                            5.0
+                        )
+                        Assert.assertEquals(
+                            productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_ID),
+                            "sku1"
+                        )
+                        Assert.assertEquals(
+                            productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE),
+                            4.5
+                        )
+                        Assert.assertEquals(emptyAttributes, productProperties)
+                    }
+                    Assert.assertEquals(emptyAttributes, impressionProperties)
+                }
+            }
+        }
+
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+        Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 0.0)
+
+        Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
     fun setUserAttributeTyped() {
         val kit = MockAppboyKit()
         kit.enableTypeDetection = true
