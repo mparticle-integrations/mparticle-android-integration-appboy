@@ -68,12 +68,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 Logger.warning("Braze, unable to parse \"enableDetectionType\"")
             }
         }
-        val forwardEnhanced = settings[BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS]
-        if (!KitUtils.isEmpty(forwardEnhanced)) {
+        val bundleProducts = settings[BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS]
+        if (!KitUtils.isEmpty(bundleProducts)) {
             try {
-                bundleProductsWithCommerceEvents = forwardEnhanced.toBoolean()
+                bundleProductsWithCommerceEvents = bundleProducts.toBoolean()
             } catch (e: Exception) {
-                Logger.warning("Braze, unable to parse \"forwardEnhanced\"")
+                bundleProductsWithCommerceEvents = false
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
@@ -206,7 +206,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             if (bundleProductsWithCommerceEvents) {
                 logOrderLevelTransaction(event)
                 messages.add(ReportingMessage.fromEvent(this, event))
-                queueDataFlush()
             } else {
                 val productList = event.products
                 productList?.let {
@@ -216,12 +215,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
             messages.add(ReportingMessage.fromEvent(this, event))
-            queueDataFlush()
         } else {
             if (bundleProductsWithCommerceEvents) {
                 logOrderLevelTransaction(event)
                 messages.add(ReportingMessage.fromEvent(this, event))
-                queueDataFlush()
             } else {
                 val eventList = CommerceEventUtils.expand(event)
                 if (eventList != null) {
@@ -233,10 +230,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                             Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
                         }
                     }
-                    queueDataFlush()
                 }
             }
         }
+        queueDataFlush()
         return messages
     }
 
@@ -723,16 +720,16 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val promotionArray = arrayOfNulls<BrazeProperties>(promotionList.count())
         for ((i, promotion) in promotionList.withIndex()) {
             val promotionProperties = BrazeProperties()
-            promotion.creative.let {
+            promotion.creative?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE, it)
             }
-            promotion.id.let {
+            promotion.id?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
             }
-            promotion.name.let {
+            promotion.name?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
             }
-            promotion.position.let {
+            promotion.position?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION, it)
             }
             promotionArray[i] = promotionProperties
@@ -744,10 +741,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val impressionArray = arrayOfNulls<BrazeProperties>(impressionList.count())
         for ((i, impression) in impressionList.withIndex()) {
             val impressionProperties = BrazeProperties()
-            impression.listName.let {
+            impression.listName?.let {
                 impressionProperties.addProperty("Product Impression List", it)
             }
-            impression.products.let {
+            impression.products?.let {
                 val productArray = getProductListParameters(it)
                 impressionProperties.addProperty(PRODUCT_KEY, productArray)
             }
@@ -873,7 +870,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val UNSUBSCRIBED = "unsubscribed"
         private const val SUBSCRIBED = "subscribed"
 
-        private const val CUSTOM_ATTRIBUTES_KEY = "custom_attributes"
+        private const val CUSTOM_ATTRIBUTES_KEY = "Attributes"
         const val PRODUCT_KEY = "products"
         const val PROMOTION_KEY = "promotions"
         const val IMPRESSION_KEY = "impressions"

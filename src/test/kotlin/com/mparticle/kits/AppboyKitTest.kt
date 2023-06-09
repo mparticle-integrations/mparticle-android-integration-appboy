@@ -546,12 +546,8 @@ class AppboyKitTests {
         val commerceEvent = CommerceEvent.Builder(Promotion.VIEW, promotion)
             .customAttributes(customAttributes)
             .build()
-        val eventList = CommerceEventUtils.expand(commerceEvent)
-        Assert.assertEquals(1, eventList.size.toLong())
+        kit.logEvent(commerceEvent)
 
-        eventList?.forEach {
-            kit.logEvent(it)
-        }
         val braze = Braze
         val events = braze.events
         Assert.assertEquals(1, events.size.toLong())
@@ -633,12 +629,9 @@ class AppboyKitTests {
         val commerceEvent = CommerceEvent.Builder(impression)
             .customAttributes(customAttributes)
             .build()
-        val eventList = CommerceEventUtils.expand(commerceEvent)
-        Assert.assertEquals(1, eventList.size.toLong())
 
-        eventList?.forEach {
-            kit.logEvent(it)
-        }
+        kit.logEvent(commerceEvent)
+
         val braze = Braze
         val events = braze.events
         Assert.assertEquals(1, events.size.toLong())
