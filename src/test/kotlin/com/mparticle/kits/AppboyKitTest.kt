@@ -525,13 +525,20 @@ class AppboyKitTests {
             properties.remove(CommerceEventUtils.Constants.ATT_TRANSACTION_ID),
             "the id"
         )
-        Assert.assertEquals(properties.remove("key1"), "value1")
-        Assert.assertEquals(properties.remove("key #2"), "value #3")
+
+        val brazeCustomAttributesDictionary = properties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
+        if (brazeCustomAttributesDictionary is BrazeProperties) {
+            val customAttributesDictionary = brazeCustomAttributesDictionary.properties
+            Assert.assertEquals(customAttributesDictionary.remove("key1"), "value1")
+            Assert.assertEquals(customAttributesDictionary.remove("key #2"), "value #3")
+            Assert.assertEquals(emptyAttributes, customAttributesDictionary)
+        }
         Assert.assertEquals(emptyAttributes, properties)
     }
 
     @Test
     fun testPromotion() {
+        val emptyAttributes = HashMap<String, String>()
         val kit = MockAppboyKit()
         kit.configuration = MockKitConfiguration()
         val customAttributes = HashMap<String, String>()
@@ -562,7 +569,6 @@ class AppboyKitTests {
         Assert.assertEquals(properties.remove("key1"), "value1")
         Assert.assertEquals(properties.remove("key #2"), "value #3")
 
-        val emptyAttributes = HashMap<String, String>()
         Assert.assertEquals(emptyAttributes, properties)
     }
 
@@ -606,8 +612,14 @@ class AppboyKitTests {
             }
         }
 
-        Assert.assertEquals(properties.remove("key1"), "value1")
-        Assert.assertEquals(properties.remove("key #2"), "value #3")
+        val brazeCustomAttributesDictionary = properties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
+        if (brazeCustomAttributesDictionary is BrazeProperties) {
+            val customAttributesDictionary = brazeCustomAttributesDictionary.properties
+            Assert.assertEquals(customAttributesDictionary.remove("key1"), "value1")
+            Assert.assertEquals(customAttributesDictionary.remove("key #2"), "value #3")
+            Assert.assertEquals(emptyAttributes, customAttributesDictionary)
+        }
+
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 0.0)
 
         Assert.assertEquals(emptyAttributes, properties)
@@ -662,6 +674,7 @@ class AppboyKitTests {
         customAttributes["key #2"] = "value #3"
         val product = Product.Builder("product name", "sku1", 4.5)
             .quantity(5.0)
+            .customAttributes(customAttributes)
             .build()
         val impression = Impression("Suggested Products List", product).let {
             CommerceEvent.Builder(it).build()
@@ -712,6 +725,13 @@ class AppboyKitTests {
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE),
                             4.5
                         )
+                        val brazeProductCustomAttributesDictionary = productProperties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
+                        if (brazeProductCustomAttributesDictionary is BrazeProperties) {
+                            val customProductAttributesDictionary = brazeProductCustomAttributesDictionary.properties
+                            Assert.assertEquals(customProductAttributesDictionary.remove("key1"), "value1")
+                            Assert.assertEquals(customProductAttributesDictionary.remove("key #2"), "value #3")
+                            Assert.assertEquals(emptyAttributes, customProductAttributesDictionary)
+                        }
                         Assert.assertEquals(emptyAttributes, productProperties)
                     }
                     Assert.assertEquals(emptyAttributes, impressionProperties)
@@ -719,8 +739,14 @@ class AppboyKitTests {
             }
         }
 
-        Assert.assertEquals(properties.remove("key1"), "value1")
-        Assert.assertEquals(properties.remove("key #2"), "value #3")
+        val brazeCustomAttributesDictionary = properties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
+        if (brazeCustomAttributesDictionary is BrazeProperties) {
+            val customAttributesDictionary = brazeCustomAttributesDictionary.properties
+            Assert.assertEquals(customAttributesDictionary.remove("key1"), "value1")
+            Assert.assertEquals(customAttributesDictionary.remove("key #2"), "value #3")
+            Assert.assertEquals(emptyAttributes, customAttributesDictionary)
+        }
+
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 0.0)
 
         Assert.assertEquals(emptyAttributes, properties)

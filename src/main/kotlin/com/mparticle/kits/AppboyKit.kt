@@ -470,9 +470,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
 
         event?.customAttributes?.let {
-            for ((key, value) in it) {
-                properties.addProperty(key, value)
-            }
+            properties.addProperty(CUSTOM_ATTRIBUTES_KEY, it)
         }
 
         val productList = event?.products
@@ -870,7 +868,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val UNSUBSCRIBED = "unsubscribed"
         private const val SUBSCRIBED = "subscribed"
 
-        private const val CUSTOM_ATTRIBUTES_KEY = "Attributes"
+        const val CUSTOM_ATTRIBUTES_KEY = "Attributes"
         const val PRODUCT_KEY = "products"
         const val PROMOTION_KEY = "promotions"
         const val IMPRESSION_KEY = "impressions"
