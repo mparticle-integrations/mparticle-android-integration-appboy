@@ -5,15 +5,11 @@ import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
-import com.braze.enums.Gender
-import com.braze.enums.Month
-import com.braze.enums.SdkFlavor
-import com.braze.enums.NotificationSubscriptionType
 import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
 import com.braze.configuration.BrazeConfig
-import com.braze.enums.BrazeSdkMetadata
+import com.braze.enums.*
 import com.braze.models.outgoing.BrazeProperties
 import com.braze.push.BrazeFirebaseMessagingService
 import com.braze.push.BrazeNotificationUtils.isBrazePushMessage
@@ -22,14 +18,13 @@ import com.mparticle.MPEvent
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
+import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
+import com.mparticle.commerce.Promotion
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
 import com.mparticle.kits.KitIntegration.*
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
@@ -41,6 +36,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     KitIntegration.EventListener, PushListener, IdentityListener {
 
     var enableTypeDetection = false
+    var bundleProductsWithCommerceEvents = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
     private val dataFlushHandler = Handler()
@@ -70,6 +66,14 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 enableTypeDetection = enableDetectionType.toBoolean()
             } catch (e: Exception) {
                 Logger.warning("Braze, unable to parse \"enableDetectionType\"")
+            }
+        }
+        val bundleProducts = settings[BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS]
+        if (!KitUtils.isEmpty(bundleProducts)) {
+            try {
+                bundleProductsWithCommerceEvents = bundleProducts.toBoolean()
+            } catch (e: Exception) {
+                bundleProductsWithCommerceEvents = false
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
@@ -199,28 +203,37 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 true
             ) && !event.products.isNullOrEmpty()
         ) {
-            val productList = event.products
-            productList?.let {
-                for (product in productList) {
-                    logTransaction(event, product)
+            if (bundleProductsWithCommerceEvents) {
+                logOrderLevelTransaction(event)
+                messages.add(ReportingMessage.fromEvent(this, event))
+            } else {
+                val productList = event.products
+                productList?.let {
+                    for (product in productList) {
+                        logTransaction(event, product)
+                    }
                 }
             }
             messages.add(ReportingMessage.fromEvent(this, event))
-            queueDataFlush()
-            return messages
-        }
-        val eventList = CommerceEventUtils.expand(event)
-        if (eventList != null) {
-            for (i in eventList.indices) {
-                try {
-                    logEvent(eventList[i])
-                    messages.add(ReportingMessage.fromEvent(this, event))
-                } catch (e: Exception) {
-                    Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
+        } else {
+            if (bundleProductsWithCommerceEvents) {
+                logOrderLevelTransaction(event)
+                messages.add(ReportingMessage.fromEvent(this, event))
+            } else {
+                val eventList = CommerceEventUtils.expand(event)
+                if (eventList != null) {
+                    for (i in eventList.indices) {
+                        try {
+                            logEvent(eventList[i])
+                            messages.add(ReportingMessage.fromEvent(this, event))
+                        } catch (e: Exception) {
+                            Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
+                        }
+                    }
                 }
             }
-            queueDataFlush()
         }
+        queueDataFlush()
         return messages
     }
 
@@ -411,6 +424,95 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         )
     }
 
+    fun logOrderLevelTransaction(event: CommerceEvent?) {
+        val properties = BrazeProperties()
+        val currency = arrayOfNulls<String>(1)
+        val commerceTypeParser: StringTypeParser =
+            BrazePropertiesSetter(properties, enableTypeDetection)
+        val onAttributeExtracted: OnAttributeExtracted = object : OnAttributeExtracted {
+            override fun onAttributeExtracted(key: String, value: String) {
+                if (!checkCurrency(key, value)) {
+                    commerceTypeParser.parseValue(key, value)
+                }
+            }
+
+            override fun onAttributeExtracted(key: String, value: Double) {
+                if (!checkCurrency(key, value)) {
+                    properties.addProperty(key, value)
+                }
+            }
+
+            override fun onAttributeExtracted(key: String, value: Int) {
+                properties.addProperty(key, value)
+            }
+
+            override fun onAttributeExtracted(attributes: Map<String, String>) {
+                for ((key, value) in attributes) {
+                    if (!checkCurrency(key, value)) {
+                        commerceTypeParser.parseValue(key, value)
+                    }
+                }
+            }
+
+            private fun checkCurrency(key: String, value: Any?): Boolean {
+                return if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
+                    currency[0] = value?.toString()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+        CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
+        var currencyValue = currency[0]
+        if (KitUtils.isEmpty(currencyValue)) {
+            currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
+        }
+
+        event?.customAttributes?.let {
+            properties.addProperty(CUSTOM_ATTRIBUTES_KEY, it)
+        }
+
+        val productList = event?.products
+        productList?.let {
+            val productArray = getProductListParameters(it)
+            properties.addProperty(PRODUCT_KEY, productArray)
+        }
+
+        val promotionList = event?.promotions
+        promotionList?.let {
+            val promotionArray = getPromotionListParameters(it)
+            properties.addProperty(PROMOTION_KEY, promotionArray)
+        }
+
+        val impressionList = event?.impressions
+        impressionList?.let {
+            val impressionArray = getImpressionListParameters(it)
+            properties.addProperty(IMPRESSION_KEY, impressionArray)
+        }
+
+        val eventName = "eCommerce - %s"
+        if (!KitUtils.isEmpty(event?.productAction) &&
+            event?.productAction.equals(Product.PURCHASE,true)
+        ) {
+            Braze.Companion.getInstance(context).logPurchase(
+                String.format(eventName, event?.productAction),
+                currencyValue,
+                event?.transactionAttributes?.revenue?.let { BigDecimal(it) } ?: BigDecimal(0),
+                1,
+                properties
+            )
+        } else {
+            if (!KitUtils.isEmpty(event?.productAction)) {
+                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.productAction), properties)
+            } else if (!KitUtils.isEmpty(event?.promotionAction)) {
+                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.promotionAction), properties)
+            } else {
+                Braze.getInstance(context).logCustomEvent(String.format(eventName, "Impression"), properties)
+            }
+        }
+    }
+
     override fun willHandlePushMessage(intent: Intent): Boolean {
         return if (!(settings[PUSH_ENABLED].toBoolean())) {
             false
@@ -562,6 +664,93 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
     }
 
+    fun getProductListParameters(productList: List<Product>): Array<BrazeProperties?> {
+        val productArray = arrayOfNulls<BrazeProperties>(productList.count())
+        for ((i, product) in productList.withIndex()) {
+            val productProperties = BrazeProperties()
+
+            product.customAttributes?.let {
+                productProperties.addProperty(CUSTOM_ATTRIBUTES_KEY, it)
+            }
+            product.couponCode?.let {
+                productProperties.addProperty(
+                    CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE,
+                    it
+                )
+            }
+            product.brand?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND, it)
+            }
+            product.category?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY, it)
+            }
+            product.name?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_NAME, it)
+            }
+            product.sku?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_ID, it)
+            }
+            product.variant?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT, it)
+            }
+            product.position?.let {
+                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION, it)
+            }
+            productProperties.addProperty(
+                CommerceEventUtils.Constants.ATT_PRODUCT_PRICE,
+                product.unitPrice
+            )
+            productProperties.addProperty(
+                CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY,
+                product.quantity
+            )
+            productProperties.addProperty(
+                CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT,
+                product.totalAmount
+            )
+
+            productArray[i] = productProperties
+        }
+        return productArray
+    }
+
+    fun getPromotionListParameters(promotionList: List<Promotion>): Array<BrazeProperties?> {
+        val promotionArray = arrayOfNulls<BrazeProperties>(promotionList.count())
+        for ((i, promotion) in promotionList.withIndex()) {
+            val promotionProperties = BrazeProperties()
+            promotion.creative?.let {
+                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE, it)
+            }
+            promotion.id?.let {
+                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
+            }
+            promotion.name?.let {
+                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
+            }
+            promotion.position?.let {
+                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION, it)
+            }
+            promotionArray[i] = promotionProperties
+        }
+        return promotionArray
+    }
+
+    fun getImpressionListParameters(impressionList: List<Impression>): Array<BrazeProperties?> {
+        val impressionArray = arrayOfNulls<BrazeProperties>(impressionList.count())
+        for ((i, impression) in impressionList.withIndex()) {
+            val impressionProperties = BrazeProperties()
+            impression.listName?.let {
+                impressionProperties.addProperty("Product Impression List", it)
+            }
+            impression.products?.let {
+                val productArray = getProductListParameters(it)
+                impressionProperties.addProperty(PRODUCT_KEY, productArray)
+            }
+            impressionArray[i] = impressionProperties
+        }
+        return impressionArray
+    }
+
     internal abstract class StringTypeParser(var enableTypeDetection: Boolean) {
         fun parseValue(key: String, value: String): Any {
             if (!enableTypeDetection) {
@@ -662,6 +851,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val FORWARD_SCREEN_VIEWS = "forwardScreenViews"
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
+        const val BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS = "bundleProductsWithCommerceEvents"
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"
@@ -677,5 +867,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val OPTED_IN = "opted_in"
         private const val UNSUBSCRIBED = "unsubscribed"
         private const val SUBSCRIBED = "subscribed"
+
+        const val CUSTOM_ATTRIBUTES_KEY = "Attributes"
+        const val PRODUCT_KEY = "products"
+        const val PROMOTION_KEY = "promotions"
+        const val IMPRESSION_KEY = "impressions"
     }
 }
