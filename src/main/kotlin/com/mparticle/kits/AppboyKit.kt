@@ -36,7 +36,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     KitIntegration.EventListener, PushListener, IdentityListener {
 
     var enableTypeDetection = false
-    var bundleProductsWithCommerceEvents = false
+    var bundleCommerceEvents = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
     private val dataFlushHandler = Handler()
@@ -68,12 +68,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 Logger.warning("Braze, unable to parse \"enableDetectionType\"")
             }
         }
-        val bundleProducts = settings[BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS]
-        if (!KitUtils.isEmpty(bundleProducts)) {
+        val bundleCommerce = settings[BUNDLE_COMMERCE_EVENTS]
+        if (!KitUtils.isEmpty(bundleCommerce)) {
             try {
-                bundleProductsWithCommerceEvents = bundleProducts.toBoolean()
+                bundleCommerceEvents = bundleCommerce.toBoolean()
             } catch (e: Exception) {
-                bundleProductsWithCommerceEvents = false
+                bundleCommerceEvents = false
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
@@ -203,7 +203,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 true
             ) && !event.products.isNullOrEmpty()
         ) {
-            if (bundleProductsWithCommerceEvents) {
+            if (bundleCommerceEvents) {
                 logOrderLevelTransaction(event)
                 messages.add(ReportingMessage.fromEvent(this, event))
             } else {
@@ -216,7 +216,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
             messages.add(ReportingMessage.fromEvent(this, event))
         } else {
-            if (bundleProductsWithCommerceEvents) {
+            if (bundleCommerceEvents) {
                 logOrderLevelTransaction(event)
                 messages.add(ReportingMessage.fromEvent(this, event))
             } else {
@@ -851,7 +851,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val FORWARD_SCREEN_VIEWS = "forwardScreenViews"
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
-        const val BUNDLE_PRODUCTS_WITH_COMMERCE_EVENTS = "bundleProductsWithCommerceEvents"
+        const val BUNDLE_COMMERCE_EVENTS = "bundleCommerceEventData"
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"
