@@ -236,7 +236,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 if (eventList != null) {
                     for (i in eventList.indices) {
                         try {
-                            logEvent(eventList[i])
+                            val e = eventList[i]
+                            val map = mutableMapOf<String, String>()
+                            event.customAttributeStrings?.let { map.putAll(it) }
+                            for (pair in map) {
+                                e.customAttributes?.put(pair.key, pair.value)
+                            }
+                            logEvent(e)
                             messages.add(ReportingMessage.fromEvent(this, event))
                         } catch (e: Exception) {
                             Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
@@ -523,7 +529,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
         val eventName = "eCommerce - %s"
         if (!KitUtils.isEmpty(event?.productAction) &&
-            event?.productAction.equals(Product.PURCHASE,true)
+            event?.productAction.equals(Product.PURCHASE, true)
         ) {
             Braze.Companion.getInstance(context).logPurchase(
                 String.format(eventName, event?.productAction),
@@ -534,11 +540,14 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             )
         } else {
             if (!KitUtils.isEmpty(event?.productAction)) {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.productAction), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, event?.productAction), properties)
             } else if (!KitUtils.isEmpty(event?.promotionAction)) {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.promotionAction), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, event?.promotionAction), properties)
             } else {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, "Impression"), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, "Impression"), properties)
             }
         }
     }
@@ -763,7 +772,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         for ((i, promotion) in promotionList.withIndex()) {
             val promotionProperties = BrazeProperties()
             promotion.creative?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE, it)
+                promotionProperties.addProperty(
+                    CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE,
+                    it
+                )
             }
             promotion.id?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
@@ -772,7 +784,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
             }
             promotion.position?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION, it)
+                promotionProperties.addProperty(
+                    CommerceEventUtils.Constants.ATT_PROMOTION_POSITION,
+                    it
+                )
             }
             promotionArray[i] = promotionProperties
         }
