@@ -10,6 +10,7 @@ import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
 import com.braze.configuration.BrazeConfig
 import com.braze.enums.*
+import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
 import com.braze.push.BrazeFirebaseMessagingService
 import com.braze.push.BrazeNotificationUtils.isBrazePushMessage
@@ -131,27 +132,38 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             Braze.getInstance(context).logCustomEvent(event.eventName)
         } else {
             val properties = BrazeProperties()
-            val user = Braze.getInstance(context).currentUser
             val brazePropertiesSetter = BrazePropertiesSetter(properties, enableTypeDetection)
-            val userAttributeSetter = user?.let { UserAttributeSetter(it, enableTypeDetection) }
             event.customAttributeStrings?.let { it ->
                 for ((key, value) in it) {
                     newAttributes[key] = brazePropertiesSetter.parseValue(key, value)
-                    val hashedKey =
-                        KitUtils.hashForFiltering(event.eventType.toString() + event.eventName + key)
-
-                    configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
-                        user?.addToCustomAttributeArray(it, value)
-                    }
-                    configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
-                        user?.removeFromCustomAttributeArray(it, value)
-                    }
-                    configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
-                        userAttributeSetter?.parseValue(it, value)
-                    }
                 }
             }
             Braze.getInstance(context).logCustomEvent(event.eventName, properties)
+            Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+                override fun onSuccess(value: BrazeUser) {
+                    val userAttributeSetter = UserAttributeSetter(value, enableTypeDetection)
+                    event.customAttributeStrings?.let { it ->
+                        for ((key, attributeValue) in it) {
+                            val hashedKey =
+                                KitUtils.hashForFiltering(event.eventType.toString() + event.eventName + key)
+
+                            configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
+                                value.addToCustomAttributeArray(it, attributeValue)
+                            }
+                            configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
+                                value.removeFromCustomAttributeArray(it, attributeValue)
+                            }
+                            configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
+                                userAttributeSetter.parseValue(it, attributeValue)
+                            }
+                        }
+                    }
+                }
+
+                override fun onError() {
+                    Logger.warning("unable to acquire user to add or remove custom user attributes from events")
+                }
+            })
         }
         queueDataFlush()
         return listOf(ReportingMessage.fromEvent(this, event).setAttributes(newAttributes))
@@ -224,7 +236,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 if (eventList != null) {
                     for (i in eventList.indices) {
                         try {
-                            logEvent(eventList[i])
+                            val e = eventList[i]
+                            val map = mutableMapOf<String, String>()
+                            event.customAttributeStrings?.let { map.putAll(it) }
+                            for (pair in map) {
+                                e.customAttributes?.put(pair.key, pair.value)
+                            }
+                            logEvent(e)
                             messages.add(ReportingMessage.fromEvent(this, event))
                         } catch (e: Exception) {
                             Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
@@ -237,61 +255,66 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         return messages
     }
 
-    override fun setUserAttribute(keyIn: String, value: String) {
+    override fun setUserAttribute(keyIn: String, attributeValue: String) {
         var key = keyIn
-        val user = Braze.getInstance(context).currentUser
-        val userAttributeSetter = user?.let { UserAttributeSetter(it, enableTypeDetection) }
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(value: BrazeUser) {
+                val userAttributeSetter = UserAttributeSetter(value, enableTypeDetection)
 
-        user?.apply {
-            when (key) {
-                UserAttributes.CITY -> setHomeCity(value)
-                UserAttributes.COUNTRY -> setCountry(value)
-                UserAttributes.FIRSTNAME -> setFirstName(value)
-                UserAttributes.LASTNAME -> setLastName(value)
-                UserAttributes.MOBILE_NUMBER -> setPhoneNumber(value)
-                UserAttributes.ZIPCODE -> setCustomUserAttribute("Zip", value)
-                UserAttributes.AGE -> {
-                    val calendar = getCalendarMinusYears(value)
-                    if (calendar != null) {
-                        user.setDateOfBirth(calendar[Calendar.YEAR], Month.JANUARY, 1)
-                    } else {
-                        Logger.warning("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value)
-                    }
-                }
-                EMAIL_SUBSCRIBE -> {
-                    when (value) {
-                        OPTED_IN -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
-                        UNSUBSCRIBED -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
-                        SUBSCRIBED -> user.setEmailNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
-                        else -> {
-                            Logger.warning("unable to set email_subscribe with invalid value: " + value)
+                when (key) {
+                    UserAttributes.CITY -> value.setHomeCity(attributeValue)
+                    UserAttributes.COUNTRY -> value.setCountry(attributeValue)
+                    UserAttributes.FIRSTNAME -> value.setFirstName(attributeValue)
+                    UserAttributes.LASTNAME -> value.setLastName(attributeValue)
+                    UserAttributes.MOBILE_NUMBER -> value.setPhoneNumber(attributeValue)
+                    UserAttributes.ZIPCODE -> value.setCustomUserAttribute("Zip", attributeValue)
+                    UserAttributes.AGE -> {
+                        val calendar = getCalendarMinusYears(attributeValue)
+                        if (calendar != null) {
+                            value.setDateOfBirth(calendar[Calendar.YEAR], Month.JANUARY, 1)
+                        } else {
+                            Logger.warning("unable to set DateOfBirth for " + UserAttributes.AGE + " = " + value)
                         }
                     }
-                }
-                PUSH_SUBSCRIBE -> {
-                    when (value) {
-                        OPTED_IN -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
-                        UNSUBSCRIBED -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
-                        SUBSCRIBED -> user.setPushNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
-                        else -> {
-                            Logger.warning("unable to set push_subscribe with invalid value: " + value)
+                    EMAIL_SUBSCRIBE -> {
+                        when (attributeValue) {
+                            OPTED_IN -> value.setEmailNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                            UNSUBSCRIBED -> value.setEmailNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                            SUBSCRIBED -> value.setEmailNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                            else -> {
+                                Logger.warning("unable to set email_subscribe with invalid value: " + value)
+                            }
                         }
                     }
-                }
-                DOB -> useDobString(value, user)
-                UserAttributes.GENDER -> {
-                    if (value.contains("fe")) setGender(Gender.FEMALE)
-                    else setGender(Gender.MALE)
-                }
-                else -> {
-                    if (key.startsWith("$")) {
-                        key = key.substring(1)
+                    PUSH_SUBSCRIBE -> {
+                        when (attributeValue) {
+                            OPTED_IN -> value.setPushNotificationSubscriptionType(NotificationSubscriptionType.OPTED_IN)
+                            UNSUBSCRIBED -> value.setPushNotificationSubscriptionType(NotificationSubscriptionType.UNSUBSCRIBED)
+                            SUBSCRIBED -> value.setPushNotificationSubscriptionType(NotificationSubscriptionType.SUBSCRIBED)
+                            else -> {
+                                Logger.warning("unable to set push_subscribe with invalid value: " + value)
+                            }
+                        }
                     }
-                    userAttributeSetter?.parseValue(key, value)
+                    DOB -> useDobString(attributeValue, value)
+                    UserAttributes.GENDER -> {
+                        if (attributeValue.contains("fe")) value.setGender(Gender.FEMALE)
+                        else value.setGender(Gender.MALE)
+                    }
+                    else -> {
+                        if (key.startsWith("$")) {
+                            key = key.substring(1)
+                        }
+                        userAttributeSetter?.parseValue(key, attributeValue)
+                    }
                 }
+                queueDataFlush()
             }
-        }
-        queueDataFlush()
+
+            override fun onError() {
+                Logger.warning("unable to set key: " + key + " with value: " + attributeValue)
+            }
+        })
     }
 
     // Expected Date Format @"yyyy'-'MM'-'dd"
@@ -311,10 +334,17 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     }
 
     override fun setUserAttributeList(key: String, list: List<String>) {
-        val user = Braze.getInstance(context).currentUser
-        val array = list.toTypedArray<String?>()
-        user?.setCustomAttributeArray(key, array)
-        queueDataFlush()
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(value: BrazeUser) {
+                val array = list.toTypedArray<String?>()
+                value.setCustomAttributeArray(key, array)
+                queueDataFlush()
+            }
+
+            override fun onError() {
+                Logger.warning("unable to set key: " + key + " with User Attribute List: " + list)
+            }
+        })
     }
 
     override fun supportsAttributeLists(): Boolean = false
@@ -344,27 +374,33 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun removeUserAttribute(keyIn: String) {
         var key = keyIn
-        val user = Braze.getInstance(context).currentUser
-
-        if (UserAttributes.CITY == key) {
-            user?.setHomeCity(null)
-        } else if (UserAttributes.COUNTRY == key) {
-            user?.setCountry(null)
-        } else if (UserAttributes.FIRSTNAME == key) {
-            user?.setFirstName(null)
-        } //else if (UserAttributes.GENDER == key) {   //Braze SDK wont allow for gender parameter to be null.
-        // user.setGender(null)}
-        else if (UserAttributes.LASTNAME == key) {
-            user?.setLastName(null)
-        } else if (UserAttributes.MOBILE_NUMBER == key) {
-            user?.setPhoneNumber(null)
-        } else {
-            if (key.startsWith("$")) {
-                key = key.substring(1)
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(value: BrazeUser) {
+                if (UserAttributes.CITY == key) {
+                    value.setHomeCity(null)
+                } else if (UserAttributes.COUNTRY == key) {
+                    value.setCountry(null)
+                } else if (UserAttributes.FIRSTNAME == key) {
+                    value.setFirstName(null)
+                } //else if (UserAttributes.GENDER == key) {   //Braze SDK wont allow for gender parameter to be null.
+                // user.setGender(null)}
+                else if (UserAttributes.LASTNAME == key) {
+                    value.setLastName(null)
+                } else if (UserAttributes.MOBILE_NUMBER == key) {
+                    value.setPhoneNumber(null)
+                } else {
+                    if (key.startsWith("$")) {
+                        key = key.substring(1)
+                    }
+                    value.unsetCustomUserAttribute(key)
+                }
+                queueDataFlush()
             }
-            user?.unsetCustomUserAttribute(key)
-        }
-        queueDataFlush()
+
+            override fun onError() {
+                Logger.warning("unable to remove User Attribute with key: " + key)
+            }
+        })
     }
 
     override fun setUserIdentity(identityType: IdentityType, identity: String) {}
@@ -493,7 +529,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
         val eventName = "eCommerce - %s"
         if (!KitUtils.isEmpty(event?.productAction) &&
-            event?.productAction.equals(Product.PURCHASE,true)
+            event?.productAction.equals(Product.PURCHASE, true)
         ) {
             Braze.Companion.getInstance(context).logPurchase(
                 String.format(eventName, event?.productAction),
@@ -504,11 +540,14 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             )
         } else {
             if (!KitUtils.isEmpty(event?.productAction)) {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.productAction), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, event?.productAction), properties)
             } else if (!KitUtils.isEmpty(event?.promotionAction)) {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, event?.promotionAction), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, event?.promotionAction), properties)
             } else {
-                Braze.getInstance(context).logCustomEvent(String.format(eventName, "Impression"), properties)
+                Braze.getInstance(context)
+                    .logCustomEvent(String.format(eventName, "Impression"), properties)
             }
         }
     }
@@ -597,19 +636,33 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     }
 
     protected open fun setId(customerId: String) {
-        val user = Braze.getInstance(context).currentUser
-        if (user == null || user.userId != customerId) {
-            Braze.getInstance(context).changeUser(customerId)
-            queueDataFlush()
-        }
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(value: BrazeUser) {
+                if (value.userId != customerId) {
+                    Braze.getInstance(context).changeUser(customerId)
+                    queueDataFlush()
+                }
+            }
+
+            override fun onError() {
+                Logger.warning("unable to change user to customer ID: " + customerId)
+            }
+        })
     }
 
     protected open fun setEmail(email: String) {
         if (email != kitPreferences.getString(PREF_KEY_CURRENT_EMAIL, null)) {
-            val user = Braze.getInstance(context).currentUser
-            user?.setEmail(email)
-            queueDataFlush()
-            kitPreferences.edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply()
+            Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+                override fun onSuccess(value: BrazeUser) {
+                    value.setEmail(email)
+                    queueDataFlush()
+                    kitPreferences.edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply()
+                }
+
+                override fun onError() {
+                    Logger.warning("unable to set email with value: " + email)
+                }
+            })
         }
     }
 
@@ -719,7 +772,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         for ((i, promotion) in promotionList.withIndex()) {
             val promotionProperties = BrazeProperties()
             promotion.creative?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE, it)
+                promotionProperties.addProperty(
+                    CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE,
+                    it
+                )
             }
             promotion.id?.let {
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
@@ -728,7 +784,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
             }
             promotion.position?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION, it)
+                promotionProperties.addProperty(
+                    CommerceEventUtils.Constants.ATT_PROMOTION_POSITION,
+                    it
+                )
             }
             promotionArray[i] = promotionProperties
         }
