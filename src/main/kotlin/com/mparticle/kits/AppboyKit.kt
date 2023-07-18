@@ -451,6 +451,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         if (KitUtils.isEmpty(currencyValue)) {
             currencyValue = CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
         }
+
+        event?.customAttributes?.let {
+            for ((key, value) in it) {
+                purchaseProperties.addProperty(key, value)
+            }
+        }
+
         Braze.Companion.getInstance(context).logPurchase(
             product.sku,
             currencyValue,
