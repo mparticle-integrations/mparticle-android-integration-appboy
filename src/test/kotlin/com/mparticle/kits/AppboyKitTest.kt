@@ -451,6 +451,11 @@ class AppboyKitTests {
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
             "the affiliation"
         )
+
+        //Custom Attributes
+        Assert.assertEquals(properties.remove("key1"), "value1")
+        Assert.assertEquals(properties.remove("key #2"), "value #3")
+
         val emptyAttributes = HashMap<String, String>()
         Assert.assertEquals(emptyAttributes, properties)
     }
