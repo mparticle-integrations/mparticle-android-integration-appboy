@@ -7,6 +7,7 @@ import com.mparticle.MPEvent
 import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.LogLevel
+import com.mparticle.MParticleOptions
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
@@ -74,11 +75,12 @@ class AppboyKitTests {
     @Test
     @Throws(Exception::class)
     fun testClassName() {
-        val factory = KitIntegrationFactory()
-        val integrations = factory.knownIntegrations
+        val options = Mockito.mock(MParticleOptions::class.java)
+        val factory = KitIntegrationFactory(options)
+        val integrations = factory.supportedKits.values
         val className = kit.javaClass.name
         for (integration in integrations) {
-            if (integration.value == className) {
+            if (integration.name == className) {
                 return
             }
         }
