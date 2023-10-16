@@ -347,7 +347,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         })
     }
 
-    override fun supportsAttributeLists(): Boolean = false
+    override fun supportsAttributeLists(): Boolean = true
 
     protected open fun queueDataFlush() {
         dataFlushRunnable?.let { dataFlushHandler.removeCallbacks(it) }
