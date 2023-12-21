@@ -34,7 +34,7 @@ apply plugin: 'com.mparticle.kit'
 
 android {
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
     }
     compileOptions {
         sourceCompatibility 1.8
@@ -48,6 +48,6 @@ repositories {
 
 dependencies {
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
-    api 'com.braze:android-sdk-ui:25.0.0'
+    api 'com.braze:android-sdk-ui:29.0.1'
     testImplementation  files('libs/java-json.jar')
 }
