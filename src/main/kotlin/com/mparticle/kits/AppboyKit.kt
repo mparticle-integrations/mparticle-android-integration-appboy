@@ -16,6 +16,7 @@ import com.braze.push.BrazeFirebaseMessagingService
 import com.braze.push.BrazeNotificationUtils.isBrazePushMessage
 import com.google.firebase.messaging.RemoteMessage
 import com.mparticle.MPEvent
+import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticle.UserAttributes
 import com.mparticle.commerce.CommerceEvent
@@ -97,6 +98,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             )
         }
         setIdentityType(settings)
+
+        val user = MParticle.getInstance()!!.Identity().currentUser
+        if (user != null) {
+            updateUser(user)
+        }
+
         return null
     }
 
