@@ -99,7 +99,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
         setIdentityType(settings)
 
-        val user = MParticle.getInstance()!!.Identity().currentUser
+        val user = MParticle.getInstance()?.Identity()?.currentUser
         if (user != null) {
             updateUser(user)
         }
