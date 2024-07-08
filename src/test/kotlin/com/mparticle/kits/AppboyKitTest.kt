@@ -983,6 +983,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
         val eaaObject = JSONObject()
         eaaObject.put("eaa", mapValue)
@@ -1014,6 +1015,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
         val eaaObject = JSONObject()
         eaaObject.put("eas", mapValue)
