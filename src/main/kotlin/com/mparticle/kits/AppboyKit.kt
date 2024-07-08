@@ -98,18 +98,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             )
         }
         setIdentityType(settings)
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         val user = MParticle.getInstance()?.Identity()?.currentUser
         if (user != null) {
             updateUser(user)
         }
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         return null
     }
 
