@@ -98,12 +98,18 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             )
         }
         setIdentityType(settings)
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         val user = MParticle.getInstance()?.Identity()?.currentUser
         if (user != null) {
             updateUser(user)
         }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         return null
     }
 
@@ -152,7 +158,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     event.customAttributeStrings?.let { it ->
                         for ((key, attributeValue) in it) {
                             val hashedKey =
-                                KitUtils.hashForFiltering(event.eventType.toString() + event.eventName + key)
+                                KitUtils.hashForFiltering(event.eventType.value.toString() + event.eventName + key)
 
                             configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
                                 value.addToCustomAttributeArray(it, attributeValue)
