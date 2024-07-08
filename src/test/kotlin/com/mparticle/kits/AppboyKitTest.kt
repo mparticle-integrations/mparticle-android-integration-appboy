@@ -938,7 +938,7 @@ class AppboyKitTests {
 //    }
 
     @Test
-    fun testCustomAttributes_log_event() {
+    fun testCustomAttributes_log_add_attribute_event() {
         val kit = MockAppboyKit()
         val currentUser = braze.currentUser
 
@@ -946,15 +946,13 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
-        val eassObject = JSONObject()
-        eassObject.put("eaa", mapValue)
+        val eaaObject = JSONObject()
+        eaaObject.put("eaa", mapValue)
+        jsonObject.put("hs", eaaObject)
 
-        jsonObject.put("hs", eassObject)
-        val mockSparseBooleanArray = Mockito.mock(SparseBooleanArray::class.java)
-
-        Mockito.`when`(mockSparseBooleanArray.size()).thenReturn(0)
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -986,14 +984,12 @@ class AppboyKitTests {
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
         mapValue.put("888169310", "testEvent")
-        val eassObject = JSONObject()
-        eassObject.put("eaa", mapValue)
-        eassObject.put("ear", mapValue)
-        jsonObject.put("hs", eassObject)
-        val mockSparseBooleanArray = Mockito.mock(SparseBooleanArray::class.java)
+        val eaaObject = JSONObject()
+        eaaObject.put("eaa", mapValue)
+        eaaObject.put("ear", mapValue)
+        jsonObject.put("hs", eaaObject)
 
-        Mockito.`when`(mockSparseBooleanArray.size()).thenReturn(0)
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -1019,14 +1015,11 @@ class AppboyKitTests {
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
         mapValue.put("888169310", "testEvent")
-        val eassObject = JSONObject()
-        eassObject.put("eaa", mapValue)
-        eassObject.put("eas", mapValue)
-        jsonObject.put("hs", eassObject)
-        val mockSparseBooleanArray = Mockito.mock(SparseBooleanArray::class.java)
+        val eaaObject = JSONObject()
+        eaaObject.put("eas", mapValue)
+        jsonObject.put("hs", eaaObject)
 
-        Mockito.`when`(mockSparseBooleanArray.size()).thenReturn(0)
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -1039,9 +1032,9 @@ class AppboyKitTests {
         instance?.logEvent(event)
         kit.logEvent(event)
         Assert.assertEquals(1, braze.events.size.toLong())
-        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomUserAttribute().size.toLong())
         var outputKey = ""
-        for (keys in currentUser.getCustomAttribute().keys) {
+        for (keys in currentUser.getCustomUserAttribute().keys) {
             outputKey = keys
             break
         }
