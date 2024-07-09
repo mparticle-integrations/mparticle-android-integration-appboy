@@ -2,6 +2,7 @@ package com.braze
 
 import android.content.Context
 import com.braze.configuration.BrazeConfig
+import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
 import com.mparticle.kits.BrazePurchase
 import java.math.BigDecimal
@@ -12,8 +13,19 @@ class Braze {
         return Companion.currentUser
     }
 
+    fun getCustomAttributeArray(): java.util.HashMap<String, MutableList<String>> {
+        return Companion.currentUser.getCustomAttribute()
+    }
+
+    fun getCurrentUser(callback: IValueCallback<BrazeUser>) {
+        callback.onSuccess(currentUser)
+    }
     fun logCustomEvent(key: String, brazeProperties: BrazeProperties) {
         events[key] = brazeProperties
+    }
+
+    fun logCustomEvent(key: String) {
+        events[key] = BrazeProperties()
     }
 
     fun logPurchase(

@@ -32,7 +32,9 @@ class BrazeUser {
 
     fun removeFromCustomAttributeArray(key: String, value: String): Boolean {
         return try {
-            customAttributeArray[key]?.remove(value)
+            if (customAttributeArray.containsKey(key)) {
+                customAttributeArray.remove(key)
+            }
             true
         } catch (npe: NullPointerException) {
             false
@@ -57,5 +59,12 @@ class BrazeUser {
     fun setCustomUserAttribute(key: String, value: Double): Boolean {
         customUserAttributes[key] = value
         return true
+    }
+    fun getCustomAttribute(): HashMap<String, MutableList<String>> {
+        return customAttributeArray
+    }
+
+    fun getCustomUserAttribute(): HashMap<String, Any> {
+        return customUserAttributes
     }
 }
