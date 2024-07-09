@@ -1,12 +1,11 @@
 package com.mparticle.kits
 
-import com.braze.enums.Month
+import android.util.SparseBooleanArray
 import com.braze.Braze
 import com.braze.models.outgoing.BrazeProperties
 import com.mparticle.MPEvent
 import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
-import com.mparticle.MParticle.LogLevel
 import com.mparticle.MParticleOptions
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Impression
@@ -15,16 +14,17 @@ import com.mparticle.commerce.Promotion
 import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.IdentityApi
 import com.mparticle.identity.MParticleUser
-import com.mparticle.internal.Logger
-import com.mparticle.internal.Logger.DefaultLogHandler
 import com.mparticle.kits.mocks.MockAppboyKit
 import com.mparticle.kits.mocks.MockContextApplication
 import com.mparticle.kits.mocks.MockKitConfiguration
 import com.mparticle.kits.mocks.MockUser
+import org.json.JSONObject
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mock
 import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
 import java.math.BigDecimal
 import java.util.Calendar
 import java.util.Locale
@@ -32,19 +32,28 @@ import java.util.Random
 
 class AppboyKitTests {
     private var random = Random()
+
+    private lateinit var braze: Braze.Companion
+
+    @Mock
+    private val mTypeFilters: SparseBooleanArray? = null
+
     private val kit: AppboyKit
         get() = AppboyKit()
 
     @Before
     fun setup() {
+        MockitoAnnotations.initMocks(this)
+        Braze.clearPurchases()
+        Braze.clearEvents()
         MParticle.setInstance(Mockito.mock(MParticle::class.java))
         Mockito.`when`(MParticle.getInstance()!!.Identity()).thenReturn(
             Mockito.mock(
                 IdentityApi::class.java
             )
         )
-        Braze.clearPurchases()
-        Braze.clearEvents()
+        braze = Braze
+        braze.currentUser.getCustomAttribute().clear()
     }
 
     @Test
@@ -927,4 +936,110 @@ class AppboyKitTests {
 //        Assert.assertEquals(properties.remove("fuzz?"), "foobar")
 //        Assert.assertEquals(0, properties.size.toLong())
 //    }
+
+    @Test
+    fun testCustomAttributes_log_add_attribute_event() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        kit.configuration = MockKitConfiguration()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("888169310", "testEvent")
+        val eaaObject = JSONObject()
+        eaaObject.put("eaa", mapValue)
+        jsonObject.put("hs", eaaObject)
+
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["destination"] = "Shop"
+        val event = MPEvent.Builder("AndroidTEST", MParticle.EventType.Navigation)
+            .customAttributes(customAttributes)
+            .build()
+        val instance = MParticle.getInstance()
+        instance?.logEvent(event)
+        kit.logEvent(event)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("testEvent", outputKey)
+    }
+
+    @Test
+    fun testCustomAttributes_log_remove_attribute_event() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        kit.configuration = MockKitConfiguration()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("888169310", "testEvent")
+        val eaaObject = JSONObject()
+        eaaObject.put("eaa", mapValue)
+        eaaObject.put("ear", mapValue)
+        jsonObject.put("hs", eaaObject)
+
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["destination"] = "Shop"
+        val event = MPEvent.Builder("AndroidTEST", MParticle.EventType.Navigation)
+            .customAttributes(customAttributes)
+            .build()
+        val instance = MParticle.getInstance()
+        instance?.logEvent(event)
+        kit.logEvent(event)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(0, currentUser.getCustomAttribute().size.toLong())
+    }
+
+    @Test
+    fun testCustomAttributes_log_add_customUserAttribute_event() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        kit.configuration = MockKitConfiguration()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("888169310", "testEvent")
+        val eaaObject = JSONObject()
+        eaaObject.put("eas", mapValue)
+        jsonObject.put("hs", eaaObject)
+
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["destination"] = "Shop"
+        val event = MPEvent.Builder("AndroidTEST", MParticle.EventType.Navigation)
+            .customAttributes(customAttributes)
+            .build()
+        val instance = MParticle.getInstance()
+        instance?.logEvent(event)
+        kit.logEvent(event)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomUserAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomUserAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("testEvent", outputKey)
+    }
 }
