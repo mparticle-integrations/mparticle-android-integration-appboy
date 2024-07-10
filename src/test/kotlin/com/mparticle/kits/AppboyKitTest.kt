@@ -24,6 +24,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import java.math.BigDecimal
 import java.util.Calendar
@@ -46,6 +48,7 @@ class AppboyKitTests {
         MockitoAnnotations.initMocks(this)
         Braze.clearPurchases()
         Braze.clearEvents()
+        Braze.clearBrazeUser()
         MParticle.setInstance(Mockito.mock(MParticle::class.java))
         Mockito.`when`(MParticle.getInstance()!!.Identity()).thenReturn(
             Mockito.mock(
@@ -565,6 +568,208 @@ class AppboyKitTests {
             Assert.assertEquals(emptyAttributes, customAttributesDictionary)
         }
         Assert.assertEquals(emptyAttributes, properties)
+    }
+
+    @Test
+    fun testCustomAttributes() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        val product: Product = Product.Builder("La Enchilada", "13061043670", 12.5)
+            .quantity(1.0)
+            .build()
+
+        val txAttributes = TransactionAttributes()
+            .setRevenue(product.totalAmount)
+
+        kit.configuration = MockKitConfiguration()
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["currentLocationLongitude"] = "2.1811267"
+        customAttributes["country"] = "ES"
+        customAttributes["deliveryLocationLatitude"] = "41.4035798"
+        customAttributes["appVersion"] = "5.201.0"
+        customAttributes["city"] = "BCN"
+        customAttributes["deviceId"] = "1104442582"
+        customAttributes["platform"] = "android"
+        customAttributes["isAuthorized"] = "true"
+        val commerceEvent: CommerceEvent = CommerceEvent.Builder(Product.ADD_TO_CART, product)
+            .currency("EUR")
+            .customAttributes(customAttributes)
+            .transactionAttributes(txAttributes)
+            .build()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        mapValue.put("-844012960", "test")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+
+        kit.logEvent(commerceEvent)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("test", outputKey)
+
+    }
+
+    @Test
+    fun testCustomAttributes_log_event() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        kit.configuration = MockKitConfiguration()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("888169310", "testEvent")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["destination"] = "Shop"
+        val event = MPEvent.Builder("AndroidTEST", MParticle.EventType.Navigation)
+            .customAttributes(customAttributes)
+            .build()
+        val instance = MParticle.getInstance()
+        instance?.logEvent(event)
+        kit.logEvent(event)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("testEvent", outputKey)
+    }
+
+    @Test
+    fun testCustomAttributes_remove_attributes() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val product: Product = Product.Builder("La Enchilada", "13061043670", 12.5)
+            .quantity(1.0)
+            .build()
+
+        val txAttributes = TransactionAttributes()
+            .setRevenue(product.totalAmount)
+
+
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["currentLocationLongitude"] = "2.1811267"
+        customAttributes["country"] = "ES"
+        customAttributes["deliveryLocationLatitude"] = "41.4035798"
+        customAttributes["appVersion"] = "5.201.0"
+        customAttributes["city"] = "BCN"
+        customAttributes["deviceId"] = "1104442582"
+        customAttributes["platform"] = "android"
+        customAttributes["isAuthorized"] = "true"
+        val commerceEvent: CommerceEvent = CommerceEvent.Builder(Product.ADD_TO_CART, product)
+            .currency("EUR")
+            .customAttributes(customAttributes)
+            .transactionAttributes(txAttributes)
+            .build()
+
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("-844012960", "test")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+        eassObject.put("ear", mapValue)
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+
+        kit.logEvent(commerceEvent)
+
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(0, currentUser.getCustomAttribute().size.toLong())
+
+    }
+
+
+
+    @Test
+    fun testCustomAttributes_add_customUserAttribute() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val product: Product = Product.Builder("La Enchilada", "13061043670", 12.5)
+            .quantity(1.0)
+            .build()
+
+        val txAttributes = TransactionAttributes()
+            .setRevenue(product.totalAmount)
+
+
+        val customAttributes: MutableMap<String, String> = HashMap()
+        customAttributes["currentLocationLongitude"] = "2.1811267"
+        customAttributes["country"] = "ES"
+        customAttributes["deliveryLocationLatitude"] = "41.4035798"
+        customAttributes["appVersion"] = "5.201.0"
+        customAttributes["city"] = "BCN"
+        customAttributes["deviceId"] = "1104442582"
+        customAttributes["platform"] = "android"
+        customAttributes["isAuthorized"] = "true"
+        val commerceEvent: CommerceEvent = CommerceEvent.Builder(Product.ADD_TO_CART, product)
+            .currency("EUR")
+            .customAttributes(customAttributes)
+            .transactionAttributes(txAttributes)
+            .build()
+
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        mapValue.put("-844012960", "test")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+        eassObject.put("eas", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+
+        kit.logEvent(commerceEvent)
+
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomUserAttribute().size)
+
     }
 
 //    @Test

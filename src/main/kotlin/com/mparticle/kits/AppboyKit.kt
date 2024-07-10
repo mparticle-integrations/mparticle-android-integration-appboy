@@ -142,7 +142,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             val brazePropertiesSetter = BrazePropertiesSetter(properties, enableTypeDetection)
             event.customAttributeStrings?.let { it ->
                 for ((key, value) in it) {
-                    newAttributes[key] = brazePropertiesSetter.parseValue(key, value)
+                    try {
+                        newAttributes[key] = brazePropertiesSetter.parseValue(key, value)
+                    } catch (e: Exception) {
+                        Logger.warning("Exception while parsing custom attributes $e")
+                    }
                 }
             }
             Braze.getInstance(context).logCustomEvent(event.eventName, properties)
@@ -152,7 +156,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     event.customAttributeStrings?.let { it ->
                         for ((key, attributeValue) in it) {
                             val hashedKey =
-                                KitUtils.hashForFiltering(event.eventType.value.toString() + event.eventName + key)
+                                if (event.eventName.contains("eCommerce")) {
+                                    KitUtils.hashForFiltering(event.eventType.value.toString() + key.trim())
+                                } else {
+                                    KitUtils.hashForFiltering(event.eventType.value.toString() + event.eventName.trim() + key.trim())
+                                }
 
                             configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
                                 value.addToCustomAttributeArray(it, attributeValue)
