@@ -134,6 +134,19 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     ): List<ReportingMessage> = emptyList()
 
     override fun logEvent(event: MPEvent): List<ReportingMessage> {
+        if (event.customAttributes != null) {
+            event.customAttributeStrings?.let {
+                changeUserArray(
+                    it,
+                    event.eventType.value,
+                    event.eventName, false
+                )
+            }
+        }
+        return logBrazeEvent(event)
+    }
+
+    private fun logBrazeEvent(event: MPEvent): List<ReportingMessage> {
         val newAttributes: MutableMap<String, Any?> = HashMap()
         if (event.customAttributes == null) {
             Braze.getInstance(context).logCustomEvent(event.eventName)
@@ -150,40 +163,47 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
             Braze.getInstance(context).logCustomEvent(event.eventName, properties)
-            Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
-                override fun onSuccess(value: BrazeUser) {
-                    val userAttributeSetter = UserAttributeSetter(value, enableTypeDetection)
-                    event.customAttributeStrings?.let { it ->
-                        for ((key, attributeValue) in it) {
-                            val hashedKey =
-                                if (event.eventName.contains("eCommerce")) {
-                                    KitUtils.hashForFiltering(event.eventType.value.toString() + key.trim())
-                                } else {
-                                    KitUtils.hashForFiltering(event.eventType.value.toString() + event.eventName.trim() + key.trim())
-                                }
-
-                            configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
-                                value.addToCustomAttributeArray(it, attributeValue)
-                            }
-                            configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
-                                value.removeFromCustomAttributeArray(it, attributeValue)
-                            }
-                            configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
-                                userAttributeSetter.parseValue(it, attributeValue)
-                            }
-                        }
-                    }
-                }
-
-                override fun onError() {
-                    Logger.warning("unable to acquire user to add or remove custom user attributes from events")
-                }
-            })
         }
         queueDataFlush()
         return listOf(ReportingMessage.fromEvent(this, event).setAttributes(newAttributes))
     }
 
+    private fun changeUserArray(
+        customAttributes: Map<String, String>,
+        eventType: Int,
+        eventName: String?,
+        isCommerceEvent: Boolean
+    ) {
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(value: BrazeUser) {
+                val userAttributeSetter = UserAttributeSetter(value, enableTypeDetection)
+                customAttributes?.let { it ->
+                    for ((key, attributeValue) in it) {
+                        //for commerce event, event name is not required for generate hash
+                        val hashedKey =
+                            if (isCommerceEvent) {
+                                KitUtils.hashForFiltering(eventType.toString() + key)
+                            } else {
+                                KitUtils.hashForFiltering(eventType.toString() + eventName + key)
+                            }
+                        configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
+                            value.addToCustomAttributeArray(it, attributeValue)
+                        }
+                        configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
+                            value.removeFromCustomAttributeArray(it, attributeValue)
+                        }
+                        configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
+                            userAttributeSetter.parseValue(it, attributeValue)
+                        }
+                    }
+                }
+            }
+
+            override fun onError() {
+                Logger.warning("unable to acquire user to add or remove custom user attributes from events")
+            }
+        })
+    }
     override fun logScreen(
         screenName: String,
         screenAttributes: Map<String, String>?
@@ -224,6 +244,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun logEvent(event: CommerceEvent): List<ReportingMessage> {
         val messages: MutableList<ReportingMessage> = LinkedList()
+        //For CommerceEvent, Event Name is not required to generate hash. So, it will be always null.
+        event.products?.get(0)?.customAttributes?.let {
+            changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
+        }
         if (!KitUtils.isEmpty(event.productAction) &&
             event.productAction.equals(
                 Product.PURCHASE,
@@ -257,7 +281,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                             for (pair in map) {
                                 e.customAttributes?.put(pair.key, pair.value)
                             }
-                            logEvent(e)
+                            logBrazeEvent(e)
                             messages.add(ReportingMessage.fromEvent(this, event))
                         } catch (e: Exception) {
                             Logger.warning("Failed to call logCustomEvent to Appboy kit: $e")
