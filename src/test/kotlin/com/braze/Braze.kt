@@ -51,6 +51,10 @@ class Braze {
             events.clear()
         }
 
+        fun clearBrazeUser(){
+            currentUser.customUserAttributes.clear()
+            currentUser.customAttributeArray.clear()
+        }
         val currentUser = BrazeUser()
 
         @JvmStatic
