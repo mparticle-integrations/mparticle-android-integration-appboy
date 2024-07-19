@@ -256,39 +256,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         val messages: MutableList<ReportingMessage> = LinkedList()
 
         //For CommerceEvent, Event Name is not required to generate hash. So, it will be always null.
-        event.products?.forEach {
-            it.customAttributes?.let {
-                changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
-            }
-        }
-        event.transactionAttributes?.let {
-            val map = mapOf(
-                "Affiliation" to it.affiliation,
-                "Revenue" to it.revenue?.toString(),
-                "Shipping" to it.shipping?.toString(),
-                "Tax" to it.tax?.toString(),
-                "CouponCode" to it.couponCode?.toString(),
-                "Id" to it.id?.toString()
-            ).mapValues { it.value.toString() }
-            changeUserArray(map, CommerceEventUtils.getEventType(event), null, true)
+        val eventAllAttributes=CommerceEventUtils.convertCommerceEventToMap(event)
+        eventAllAttributes?.let {
+            changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
         }
         event.customAttributeStrings?.let {
             changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
-        }
-        event.impressions?.forEach { impression ->
-            impression.products.forEach { product ->
-                product.customAttributes?.let {
-                    changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
-                }
-            }
-        }
-        event.promotions?.forEach {
-            val attributes: MutableMap<String, String> = HashMap()
-            if (event.customAttributeStrings != null) {
-                attributes.putAll(event.customAttributeStrings!!)
-            }
-            CommerceEventUtils.extractPromotionAttributes(it, attributes)
-            changeUserArray(attributes, CommerceEventUtils.getEventType(event), null, true)
         }
         if (!KitUtils.isEmpty(event.productAction) &&
             event.productAction.equals(

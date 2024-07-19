@@ -1458,7 +1458,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
-        mapValue.put("484437277", "transactionAttributes")
+        mapValue.put("-94160813", "transactionAttributes")
         val eassObject = JSONObject()
         eassObject.put("eaa", mapValue)
 
