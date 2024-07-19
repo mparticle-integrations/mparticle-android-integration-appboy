@@ -9,7 +9,11 @@ import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
 import com.braze.configuration.BrazeConfig
-import com.braze.enums.*
+import com.braze.enums.BrazeSdkMetadata
+import com.braze.enums.Gender
+import com.braze.enums.Month
+import com.braze.enums.NotificationSubscriptionType
+import com.braze.enums.SdkFlavor
 import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
 import com.braze.push.BrazeFirebaseMessagingService
@@ -26,10 +30,16 @@ import com.mparticle.commerce.Promotion
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
-import com.mparticle.kits.KitIntegration.*
+import com.mparticle.kits.KitIntegration.AttributeListener
+import com.mparticle.kits.KitIntegration.CommerceListener
+import com.mparticle.kits.KitIntegration.IdentityListener
+import com.mparticle.kits.KitIntegration.PushListener
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.EnumSet
+import java.util.LinkedList
 
 /**
  * mParticle client-side Appboy integration
@@ -244,9 +254,41 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun logEvent(event: CommerceEvent): List<ReportingMessage> {
         val messages: MutableList<ReportingMessage> = LinkedList()
+
         //For CommerceEvent, Event Name is not required to generate hash. So, it will be always null.
-        event.products?.get(0)?.customAttributes?.let {
+        event.products?.forEach {
+            it.customAttributes?.let {
+                changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
+            }
+        }
+        event.transactionAttributes?.let {
+            val map = mapOf(
+                "Affiliation" to it.affiliation,
+                "Revenue" to it.revenue?.toString(),
+                "Shipping" to it.shipping?.toString(),
+                "Tax" to it.tax?.toString(),
+                "CouponCode" to it.couponCode?.toString(),
+                "Id" to it.id.toString()
+            ).mapValues { it.value.toString() }
+            changeUserArray(map, CommerceEventUtils.getEventType(event), null, true)
+        }
+        event.customAttributeStrings?.let {
             changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
+        }
+        event.impressions?.forEach { impression ->
+            impression.products.forEach { product ->
+                product.customAttributes?.let {
+                    changeUserArray(it, CommerceEventUtils.getEventType(event), null, true)
+                }
+            }
+        }
+        event.promotions?.forEach {
+            val attributes: MutableMap<String, String> = HashMap()
+            if (event.customAttributeStrings != null) {
+                attributes.putAll(event.customAttributeStrings!!)
+            }
+            CommerceEventUtils.extractPromotionAttributes(it, attributes)
+            changeUserArray(attributes, CommerceEventUtils.getEventType(event), null, true)
         }
         if (!KitUtils.isEmpty(event.productAction) &&
             event.productAction.equals(
@@ -855,6 +897,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
         return impressionArray
     }
+
 
     internal abstract class StringTypeParser(var enableTypeDetection: Boolean) {
         fun parseValue(key: String, value: String): Any {

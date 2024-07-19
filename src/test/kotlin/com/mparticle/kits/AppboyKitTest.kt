@@ -1430,4 +1430,184 @@ class AppboyKitTests {
         method.invoke(kit, customAttributes, 5, "AndroidTEST", false)
         Assert.assertEquals(0, currentUser.getCustomAttribute().size.toLong())
     }
+
+    @Test
+    fun testChangeUserArray_for_TransactionAttributes() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        val product: Product = Product.Builder("La Enchilada", "13061043670", 12.5)
+            .quantity(1.0)
+            .customAttributes(
+                mapOf(
+                    "size" to "5",
+                    "color" to "Black",
+                    "Total Amount" to "120.22"
+                )
+            )
+            .build()
+
+        val txAttributes = TransactionAttributes()
+            .setRevenue(product.totalAmount)
+
+        kit.configuration = MockKitConfiguration()
+        val commerceEvent: CommerceEvent = CommerceEvent.Builder(Product.ADD_TO_CART, product)
+            .currency("EUR")
+            .transactionAttributes(txAttributes)
+            .build()
+
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        mapValue.put("484437277", "transactionAttributes")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+
+        kit.logEvent(commerceEvent)
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("transactionAttributes", outputKey)
+    }
+
+    @Test
+    fun testChangeUserArray_for_Impressions() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        val product: Product = Product.Builder("La Enchilada", "13061043670", 12.5)
+            .quantity(1.0)
+            .customAttributes(
+                mapOf(
+                    "size" to "5",
+                    "color" to "Black",
+                    "Total Amount" to "120.22"
+                )
+            )
+            .build()
+
+        kit.configuration = MockKitConfiguration()
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        mapValue.put("-1186525452", "TestImpressions")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        Impression("Suggested Products List", product).let {
+            CommerceEvent.Builder(it).build()
+        }.let {
+            kit.logEvent(it)
+        }
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("TestImpressions", outputKey)
+    }
+
+    @Test
+    fun testChangeUserArray_for_Promotions() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        mapValue.put("1458842803", "TestImpressions")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        Promotion().apply {
+            id = "test_1"
+            creative = "test_button_1"
+            name = "10% off Sale"
+            position ="button_center"
+        }.let {
+            CommerceEvent.Builder(Promotion.CLICK, it).build()
+        }.let {
+            kit.logEvent(it)
+        }
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("TestImpressions", outputKey)
+    }
+
+    @Test
+    fun testChangeUserArray_for_Promotions_with_custom_attribute() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val jsonObject = JSONObject()
+        val mapValue = JSONObject()
+        mapValue.put("1560179420", "TestImpressions")
+        val eassObject = JSONObject()
+        eassObject.put("eaa", mapValue)
+
+        jsonObject.put("hs", eassObject)
+        val mockSparseBooleanArray = mock(SparseBooleanArray::class.java)
+
+        `when`(mockSparseBooleanArray.size()).thenReturn(0)
+        `when`(mTypeFilters!!.size()).thenReturn(0) // Example mock behavior
+
+        var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
+        kit.configuration = kitConfiguration
+        Promotion().apply {
+            id = "test_1"
+            creative = "test_button_1"
+            name = "10% off Sale"
+            position ="button_center"
+        }.let {
+            CommerceEvent.Builder(Promotion.CLICK, it).customAttributes(
+                    mapOf(
+                        "color" to "Red",
+                        "Total Amount" to "150.00"
+                    )).build()
+        }.let {
+            kit.logEvent(it)
+        }
+        Assert.assertEquals(1, braze.events.size.toLong())
+        Assert.assertEquals(1, currentUser.getCustomAttribute().size.toLong())
+        var outputKey = ""
+        for (keys in currentUser.getCustomAttribute().keys) {
+            outputKey = keys
+            break
+        }
+        Assert.assertEquals("TestImpressions", outputKey)
+    }
+
 }
