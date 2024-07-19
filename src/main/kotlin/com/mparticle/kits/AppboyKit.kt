@@ -268,7 +268,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 "Shipping" to it.shipping?.toString(),
                 "Tax" to it.tax?.toString(),
                 "CouponCode" to it.couponCode?.toString(),
-                "Id" to it.id.toString()
+                "Id" to it.id?.toString()
             ).mapValues { it.value.toString() }
             changeUserArray(map, CommerceEventUtils.getEventType(event), null, true)
         }
