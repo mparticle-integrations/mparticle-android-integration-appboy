@@ -185,8 +185,8 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         isCommerceEvent: Boolean
     ) {
         Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
-            override fun onSuccess(value: BrazeUser) {
-                val userAttributeSetter = UserAttributeSetter(value, enableTypeDetection)
+            override fun onSuccess(brazeUser: BrazeUser) {
+                val userAttributeSetter = UserAttributeSetter(brazeUser, enableTypeDetection)
                 customAttributes?.let { it ->
                     for ((key, attributeValue) in it) {
                         //for commerce event, event name is not required for generate hash
@@ -197,10 +197,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                                 KitUtils.hashForFiltering(eventType.toString() + eventName + key)
                             }
                         configuration.eventAttributesAddToUser?.get(hashedKey)?.let {
-                            value.addToCustomAttributeArray(it, attributeValue)
+                            brazeUser.addToCustomAttributeArray(it, attributeValue)
                         }
                         configuration.eventAttributesRemoveFromUser?.get(hashedKey)?.let {
-                            value.removeFromCustomAttributeArray(it, attributeValue)
+                            brazeUser.removeFromCustomAttributeArray(it, attributeValue)
                         }
                         configuration.eventAttributesSingleItemUser?.get(hashedKey)?.let {
                             userAttributeSetter.parseValue(it, attributeValue)
