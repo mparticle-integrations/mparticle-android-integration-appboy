@@ -27,9 +27,12 @@ import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
 import com.mparticle.kits.KitIntegration.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * mParticle client-side Appboy integration
@@ -731,95 +734,95 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
     }
 
-    fun getProductListParameters(productList: List<Product>): Array<BrazeProperties?> {
-        val productArray = arrayOfNulls<BrazeProperties>(productList.count())
+    fun getProductListParameters(productList: List<Product>): JSONArray {
+        val productArray = JSONArray()
         for ((i, product) in productList.withIndex()) {
-            val productProperties = BrazeProperties()
+            val productProperties = JSONObject()
 
             product.customAttributes?.let {
-                productProperties.addProperty(CUSTOM_ATTRIBUTES_KEY, it)
+                productProperties.put(CUSTOM_ATTRIBUTES_KEY, it)
             }
             product.couponCode?.let {
-                productProperties.addProperty(
+                productProperties.put(
                     CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE,
                     it
                 )
             }
             product.brand?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND, it)
             }
             product.category?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY, it)
             }
             product.name?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_NAME, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_NAME, it)
             }
             product.sku?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_ID, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_ID, it)
             }
             product.variant?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT, it)
             }
             product.position?.let {
-                productProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION, it)
+                productProperties.put(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION, it)
             }
-            productProperties.addProperty(
+            productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_PRICE,
                 product.unitPrice
             )
-            productProperties.addProperty(
+            productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY,
                 product.quantity
             )
-            productProperties.addProperty(
+            productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT,
                 product.totalAmount
             )
 
-            productArray[i] = productProperties
+            productArray.put(productProperties)
         }
         return productArray
     }
 
-    fun getPromotionListParameters(promotionList: List<Promotion>): Array<BrazeProperties?> {
-        val promotionArray = arrayOfNulls<BrazeProperties>(promotionList.count())
+    fun getPromotionListParameters(promotionList: List<Promotion>): JSONArray {
+        val promotionArray = JSONArray()
         for ((i, promotion) in promotionList.withIndex()) {
-            val promotionProperties = BrazeProperties()
+            val promotionProperties = JSONObject()
             promotion.creative?.let {
-                promotionProperties.addProperty(
+                promotionProperties.put(
                     CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE,
                     it
                 )
             }
             promotion.id?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
+                promotionProperties.put(CommerceEventUtils.Constants.ATT_PROMOTION_ID, it)
             }
             promotion.name?.let {
-                promotionProperties.addProperty(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
+                promotionProperties.put(CommerceEventUtils.Constants.ATT_PROMOTION_NAME, it)
             }
             promotion.position?.let {
-                promotionProperties.addProperty(
+                promotionProperties.put(
                     CommerceEventUtils.Constants.ATT_PROMOTION_POSITION,
                     it
                 )
             }
-            promotionArray[i] = promotionProperties
+            promotionArray.put(promotionProperties)
         }
         return promotionArray
     }
 
-    fun getImpressionListParameters(impressionList: List<Impression>): Array<BrazeProperties?> {
-        val impressionArray = arrayOfNulls<BrazeProperties>(impressionList.count())
+    fun getImpressionListParameters(impressionList: List<Impression>): JSONArray {
+        val impressionArray = JSONArray()
         for ((i, impression) in impressionList.withIndex()) {
-            val impressionProperties = BrazeProperties()
+            val impressionProperties = JSONObject()
             impression.listName?.let {
-                impressionProperties.addProperty("Product Impression List", it)
+                impressionProperties.put("Product Impression List", it)
             }
             impression.products?.let {
                 val productArray = getProductListParameters(it)
-                impressionProperties.addProperty(PRODUCT_KEY, productArray)
+                impressionProperties.put(PRODUCT_KEY, productArray)
             }
-            impressionArray[i] = impressionProperties
+            impressionArray.put(impressionProperties)
         }
         return impressionArray
     }
