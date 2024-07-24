@@ -18,6 +18,7 @@ import com.mparticle.kits.mocks.MockAppboyKit
 import com.mparticle.kits.mocks.MockContextApplication
 import com.mparticle.kits.mocks.MockKitConfiguration
 import com.mparticle.kits.mocks.MockUser
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert
 import org.junit.Before
@@ -504,7 +505,7 @@ class AppboyKitTests {
         Assert.assertNotNull(purchase.purchaseProperties)
         val properties = purchase.purchaseProperties.properties
         val productArray = properties.remove(AppboyKit.PRODUCT_KEY)
-        Assert.assertTrue(productArray is Array<*>)
+        Assert.assertTrue(productArray is JSONArray)
         if (productArray is Array<*>) {
             Assert.assertEquals(1, productArray.size.toLong())
             val productBrazeProperties = productArray[0]
@@ -629,7 +630,7 @@ class AppboyKitTests {
         val properties = event.properties
 
         val promotionArray = properties.remove(AppboyKit.PROMOTION_KEY)
-        Assert.assertTrue(promotionArray is Array<*>)
+        Assert.assertTrue(promotionArray is JSONArray)
         if (promotionArray is Array<*>) {
             Assert.assertEquals(1, promotionArray.size.toLong())
             val promotionBrazeProperties = promotionArray[0]
@@ -734,7 +735,7 @@ class AppboyKitTests {
         val properties = event.properties
 
         val impressionArray = properties.remove(AppboyKit.IMPRESSION_KEY)
-        Assert.assertTrue(impressionArray is Array<*>)
+        Assert.assertTrue(impressionArray is JSONArray)
         if (impressionArray is Array<*>) {
             Assert.assertEquals(1, impressionArray.size.toLong())
             val impressionBrazeProperties = impressionArray[0]
