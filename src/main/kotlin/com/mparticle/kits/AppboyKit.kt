@@ -460,7 +460,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                         }
                 }
         } catch (jse: JSONException) {
-            Logger.warning(jse, "The Google Firebase kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+            Logger.warning(jse, "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
             emptyMap()
         }
     }
@@ -479,7 +479,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
         } catch (e: Exception) {
-            Logger.error(e, "The Google Firebase kit was unable to parse the user's ConsentState, consent may not be set correctly on the Google Analytics SDK")
+            Logger.error(e, "The Braze kit was unable to parse the user's ConsentState, consent may not be set correctly on the Braze SDK")
         }
         return topLevelMap
     }
@@ -501,7 +501,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
         } catch (e: Exception) {
-            Logger.error(e, "The Google Firebase kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+            Logger.error(e, "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
         }
         return null
     }
