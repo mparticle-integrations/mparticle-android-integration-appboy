@@ -5,6 +5,7 @@ import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
+import android.util.Log
 import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
@@ -23,11 +24,13 @@ import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
 import com.mparticle.commerce.Promotion
+import com.mparticle.consent.ConsentState
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
 import com.mparticle.kits.KitIntegration.*
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
@@ -38,7 +41,7 @@ import kotlin.collections.HashMap
  * mParticle client-side Appboy integration
  */
 open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
-    KitIntegration.EventListener, PushListener, IdentityListener {
+    KitIntegration.EventListener, PushListener, IdentityListener ,KitIntegration.UserAttributeListener {
 
     var enableTypeDetection = false
     var bundleCommerceEvents = false
@@ -106,7 +109,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         if (user != null) {
             updateUser(user)
         }
-
+        val userConsentState = currentUser?.consentState
+        userConsentState?.let {
+            setConsent(currentUser.consentState)
+        }
         return null
     }
 
@@ -357,7 +363,148 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         })
     }
 
+    override fun onIncrementUserAttribute(
+        key: String?,
+        incrementedBy: Number?,
+        value: String?,
+        user: FilteredMParticleUser?
+    ) {
+    }
+
+    override fun onRemoveUserAttribute(key: String?, user: FilteredMParticleUser?) {
+    }
+
+    override fun onSetUserAttribute(key: String?, value: Any?, user: FilteredMParticleUser?) {
+    }
+
+    override fun onSetUserTag(key: String?, user: FilteredMParticleUser?) {
+    }
+
+    override fun onSetUserAttributeList(
+        attributeKey: String?,
+        attributeValueList: MutableList<String>?,
+        user: FilteredMParticleUser?
+    ) {
+    }
+
+    override fun onSetAllUserAttributes(
+        userAttributes: MutableMap<String, String>?,
+        userAttributeLists: MutableMap<String, MutableList<String>>?,
+        user: FilteredMParticleUser?
+    ) {
+    }
+
     override fun supportsAttributeLists(): Boolean = true
+    override fun onConsentStateUpdated(
+        oldState: ConsentState,
+        newState: ConsentState,
+        user: FilteredMParticleUser
+    ) {
+        setConsent(newState)
+
+
+    }
+
+    private fun setConsent(consentState: ConsentState) {
+        val clientConsentSettings = parseToNestedMap(consentState.toString())
+
+        parseConsentMapping(settings[consentMappingSDK]).iterator().forEach { currentConsent ->
+            val isConsentAvailable =
+                searchKeyInNestedMap(clientConsentSettings, key = currentConsent.key)
+
+            if (isConsentAvailable != null) {
+                val isConsentGranted: Boolean =
+                    JSONObject(isConsentAvailable.toString()).opt("consented") as Boolean
+
+                when (currentConsent.value) {
+                    "google_ad_user_data" -> setConsentValueToBraze(
+                        KEY_GOOGLE_AD_USER_DATA, isConsentGranted
+                    )
+
+                    "google_ad_personalization" -> setConsentValueToBraze(
+                        KEY_GOOGLE_AD_PERSONALIZATION, isConsentGranted
+                    )
+
+                }
+            }
+        }
+    }
+
+    private fun setConsentValueToBraze(key: String, value: Boolean) {
+        Braze.getInstance(context).getCurrentUser(object : IValueCallback<BrazeUser> {
+            override fun onSuccess(brazeUser: BrazeUser) {
+                brazeUser.setCustomUserAttribute(key, value)
+            }
+
+            override fun onError() {
+                super.onError()
+            }
+        })
+    }
+
+    private fun parseConsentMapping(json: String?): Map<String, String> {
+        if (json.isNullOrEmpty()) {
+            return emptyMap()
+        }
+        val jsonWithFormat = json.replace("\\", "")
+
+        return try {
+            JSONArray(jsonWithFormat)
+                .let { jsonArray ->
+                    (0 until jsonArray.length())
+                        .associate {
+                            val jsonObject = jsonArray.getJSONObject(it)
+                            val map = jsonObject.getString("map")
+                            val value = jsonObject.getString("value")
+                            map to value
+                        }
+                }
+        } catch (jse: JSONException) {
+            Logger.warning(jse, "The Google Firebase kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+            emptyMap()
+        }
+    }
+
+    private fun parseToNestedMap(jsonString: String): Map<String, Any> {
+        val topLevelMap = mutableMapOf<String, Any>()
+        try {
+            val jsonObject = JSONObject(jsonString)
+
+            for (key in jsonObject.keys()) {
+                val value = jsonObject.get(key)
+                if (value is JSONObject) {
+                    topLevelMap[key] = parseToNestedMap(value.toString())
+                } else {
+                    topLevelMap[key] = value
+                }
+            }
+        } catch (e: Exception) {
+            Logger.error(e, "The Google Firebase kit was unable to parse the user's ConsentState, consent may not be set correctly on the Google Analytics SDK")
+        }
+        return topLevelMap
+    }
+
+    private fun searchKeyInNestedMap(map: Map<*, *>, key: Any): Any? {
+        if (map.isNullOrEmpty()) {
+            return null
+        }
+        try {
+            for ((mapKey, mapValue) in map) {
+                if (mapKey.toString().equals(key.toString(), ignoreCase = true)) {
+                    return mapValue
+                }
+                if (mapValue is Map<*, *>) {
+                    val foundValue = searchKeyInNestedMap(mapValue, key)
+                    if (foundValue != null) {
+                        return foundValue
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Logger.error(e, "The Google Firebase kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+        }
+        return null
+    }
 
     protected open fun queueDataFlush() {
         dataFlushRunnable?.let { dataFlushHandler.removeCallbacks(it) }
@@ -943,6 +1090,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val OPTED_IN = "opted_in"
         private const val UNSUBSCRIBED = "unsubscribed"
         private const val SUBSCRIBED = "subscribed"
+
+        //Constants for Read Consent
+        private const val consentMappingSDK = "consentMappingSDK"
+        private const val KEY_GOOGLE_AD_USER_DATA = "\$google_ad_user_data"
+        private const val KEY_GOOGLE_AD_PERSONALIZATION = "\$google_ad_personalization"
 
         const val CUSTOM_ATTRIBUTES_KEY = "Attributes"
         const val PRODUCT_KEY = "products"

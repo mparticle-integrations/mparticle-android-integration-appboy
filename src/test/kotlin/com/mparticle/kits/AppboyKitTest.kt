@@ -1,5 +1,8 @@
 package com.mparticle.kits
 
+import android.app.Activity
+import android.content.Context
+import android.net.Uri
 import android.util.SparseBooleanArray
 import com.braze.Braze
 import com.braze.models.outgoing.BrazeProperties
@@ -7,17 +10,23 @@ import com.mparticle.MPEvent
 import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticleOptions
+import com.mparticle.MParticleOptions.DataplanOptions
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
 import com.mparticle.commerce.Promotion
 import com.mparticle.commerce.TransactionAttributes
+import com.mparticle.consent.ConsentState
+import com.mparticle.consent.GDPRConsent
 import com.mparticle.identity.IdentityApi
 import com.mparticle.identity.MParticleUser
+import com.mparticle.internal.CoreCallbacks
+import com.mparticle.internal.CoreCallbacks.KitListener
 import com.mparticle.kits.mocks.MockAppboyKit
 import com.mparticle.kits.mocks.MockContextApplication
 import com.mparticle.kits.mocks.MockKitConfiguration
 import com.mparticle.kits.mocks.MockUser
+import junit.framework.TestCase
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert
@@ -25,7 +34,10 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.MockitoAnnotations
+import java.lang.ref.WeakReference
+import java.lang.reflect.Method
 import java.math.BigDecimal
 import java.util.Calendar
 import java.util.Locale
@@ -39,6 +51,12 @@ class AppboyKitTests {
     @Mock
     private val mTypeFilters: SparseBooleanArray? = null
 
+    @Mock
+    lateinit var filteredMParticleUser: FilteredMParticleUser
+
+    @Mock
+    lateinit var user: MParticleUser
+
     private val kit: AppboyKit
         get() = AppboyKit()
 
@@ -47,6 +65,7 @@ class AppboyKitTests {
         MockitoAnnotations.initMocks(this)
         Braze.clearPurchases()
         Braze.clearEvents()
+        Braze.currentUser.customUserAttributes.clear()
         MParticle.setInstance(Mockito.mock(MParticle::class.java))
         Mockito.`when`(MParticle.getInstance()!!.Identity()).thenReturn(
             Mockito.mock(
@@ -54,7 +73,7 @@ class AppboyKitTests {
             )
         )
         braze = Braze
-        braze.currentUser.getCustomAttribute().clear()
+
     }
 
     @Test
@@ -1042,5 +1061,239 @@ class AppboyKitTests {
             break
         }
         Assert.assertEquals("testEvent", outputKey)
+    }
+
+    @Test
+    fun testParseToNestedMap_When_JSON_Is_INVALID() {
+        val kit = MockAppboyKit()
+        var jsonInput =
+            "{'GDPR':{'marketing':'{:false,'timestamp':1711038269644:'Test consent','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}','performance':'{'consented':true,'timestamp':1711038269644,'document':'parental_consent_agreement_v2','location':'17 Cherry Tree Lan 3','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'},'CCPA':'{'consented':true,'timestamp':1711038269644,'document':'ccpa_consent_agreement_v3','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'}"
+
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "parseToNestedMap",
+            String::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, jsonInput)
+        Assert.assertEquals(mutableMapOf<String, Any>(), result)
+    }
+
+    @Test
+    fun testParseToNestedMap_When_JSON_Is_Empty() {
+        val kit = MockAppboyKit()
+        var jsonInput = ""
+
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "parseToNestedMap",
+            String::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, jsonInput)
+        Assert.assertEquals(mutableMapOf<String, Any>(), result)
+    }
+
+    @Test
+    fun testSearchKeyInNestedMap_When_Input_Key_Is_Empty_String() {
+        val kit = MockAppboyKit()
+        val map = mapOf(
+            "GDPR" to true,
+            "marketing" to mapOf(
+                "consented" to false,
+                "document" to mapOf(
+                    "timestamp" to 1711038269644
+                )
+            )
+        )
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "searchKeyInNestedMap", Map::class.java,
+            Any::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, map, "")
+        Assert.assertEquals(null, result)
+    }
+
+    @Test
+    fun testSearchKeyInNestedMap_When_Input_Is_Empty_Map() {
+        val kit = MockAppboyKit()
+        val emptyMap: Map<String, Int> = emptyMap()
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "searchKeyInNestedMap", Map::class.java,
+            Any::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, emptyMap, "1")
+        Assert.assertEquals(null, result)
+    }
+
+    @Test
+    fun testParseConsentMapping_When_Input_Is_Empty_Json() {
+        val kit = MockAppboyKit()
+        val emptyJson = ""
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "parseConsentMapping",
+            String::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, emptyJson)
+        Assert.assertEquals(emptyMap<String, String>(), result)
+    }
+
+    @Test
+    fun testParseConsentMapping_When_Input_Is_Invalid_Json() {
+        val kit = MockAppboyKit()
+        var jsonInput =
+            "{'GDPR':{'marketing':'{:false,'timestamp':1711038269644:'Test consent','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}','performance':'{'consented':true,'timestamp':1711038269644,'document':'parental_consent_agreement_v2','location':'17 Cherry Tree Lan 3','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'},'CCPA':'{'consented':true,'timestamp':1711038269644,'document':'ccpa_consent_agreement_v3','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'}"
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "parseConsentMapping",
+            String::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, jsonInput)
+        Assert.assertEquals(emptyMap<String, String>(), result)
+    }
+
+    @Test
+    fun testParseConsentMapping_When_Input_Is_NULL() {
+        val kit = MockAppboyKit()
+        val method: Method = AppboyKit::class.java.getDeclaredMethod(
+            "parseConsentMapping",
+            String::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(kit, null)
+        Assert.assertEquals(emptyMap<String, String>(), result)
+    }
+
+    @Test
+    fun onConsentStateUpdatedTest() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val map = java.util.HashMap<String, String>()
+
+        map["consentMappingSDK"] =
+            "        [{\\\"jsmap\\\":null,\\\"map\\\":\\\"Performance\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_user_data\\\"},{\\\"jsmap\\\":null,\\\"map\\\":\\\"Marketing\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
+
+
+        var kitConfiguration =
+            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+        kit.configuration = kitConfiguration
+
+        val marketingConsent = GDPRConsent.builder(false)
+            .document("Test consent")
+            .location("17 Cherry Tree Lane")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+        val state = ConsentState.builder()
+            .addGDPRConsentState("Marketing", marketingConsent)
+            .build()
+        filteredMParticleUser = FilteredMParticleUser.getInstance(user, kit)
+
+        kit.onConsentStateUpdated(state, state, filteredMParticleUser)
+        TestCase.assertEquals(false, currentUser.getCustomUserAttribute()["\$google_ad_personalization"])
+
+    }
+
+    @Test
+    fun onConsentStateUpdatedTest_When_Both_The_consents_Are_True() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val map = java.util.HashMap<String, String>()
+
+        map["consentMappingSDK"] =
+            "        [{\\\"jsmap\\\":null,\\\"map\\\":\\\"Performance\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_user_data\\\"},{\\\"jsmap\\\":null,\\\"map\\\":\\\"Marketing\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
+
+
+        var kitConfiguration =
+            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+        kit.configuration = kitConfiguration
+
+        val marketingConsent = GDPRConsent.builder(true)
+            .document("Test consent")
+            .location("17 Cherry Tree Lane")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val performanceConsent = GDPRConsent.builder(true)
+            .document("parental_consent_agreement_v2")
+            .location("17 Cherry Tree Lan 3")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val state = ConsentState.builder()
+            .addGDPRConsentState("Marketing", marketingConsent)
+            .addGDPRConsentState("Performance", performanceConsent)
+            .build()
+        filteredMParticleUser = FilteredMParticleUser.getInstance(user, kit)
+
+        kit.onConsentStateUpdated(state, state, filteredMParticleUser)
+        TestCase.assertEquals(true, currentUser.getCustomUserAttribute()["\$google_ad_user_data"])
+        TestCase.assertEquals(true, currentUser.getCustomUserAttribute()["\$google_ad_personalization"])
+    }
+
+    @Test
+    fun onConsentStateUpdatedTest_When_No_DATA_From_Server() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val marketingConsent = GDPRConsent.builder(true)
+            .document("Test consent")
+            .location("17 Cherry Tree Lane")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val performanceConsent = GDPRConsent.builder(true)
+            .document("parental_consent_agreement_v2")
+            .location("17 Cherry Tree Lan 3")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val state = ConsentState.builder()
+            .addGDPRConsentState("Marketing", marketingConsent)
+            .addGDPRConsentState("Performance", performanceConsent)
+            .build()
+        filteredMParticleUser = FilteredMParticleUser.getInstance(user, kit)
+        kit.onConsentStateUpdated(state, state, filteredMParticleUser)
+        TestCase.assertEquals(0, currentUser.getCustomUserAttribute().size)
+    }
+
+    @Test
+    fun testOnConsentStateUpdatedTest_No_consentMappingSDK() {
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+        kit.configuration = MockKitConfiguration()
+        val map = java.util.HashMap<String, String>()
+        map["includeEnrichedUserAttributes"] = "True"
+        map["userIdentificationType"] = "MPID"
+        map["ABKDisableAutomaticLocationCollectionKey"] = "False"
+        map["defaultAdPersonalizationConsentSDK"] = "Denied"
+
+        kit.configuration =
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+
+        val marketingConsent = GDPRConsent.builder(true)
+            .document("Test consent")
+            .location("17 Cherry Tree Lane")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val performanceConsent = GDPRConsent.builder(true)
+            .document("parental_consent_agreement_v2")
+            .location("17 Cherry Tree Lan 3")
+            .hardwareId("IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702")
+            .build()
+
+        val state = ConsentState.builder()
+            .addGDPRConsentState("Marketing", marketingConsent)
+            .addGDPRConsentState("Performance", performanceConsent)
+            .build()
+        filteredMParticleUser = FilteredMParticleUser.getInstance(user, kit)
+
+        kit.onConsentStateUpdated(state, state, filteredMParticleUser)
+
+        TestCase.assertEquals(0, currentUser.getCustomUserAttribute().size)
+
     }
 }
