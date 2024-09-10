@@ -41,7 +41,7 @@ import kotlin.collections.HashMap
  * mParticle client-side Appboy integration
  */
 open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
-    KitIntegration.EventListener, PushListener, IdentityListener ,KitIntegration.UserAttributeListener {
+    KitIntegration.EventListener, PushListener, IdentityListener, KitIntegration.UserAttributeListener {
 
     var enableTypeDetection = false
     var bundleCommerceEvents = false

@@ -1,8 +1,5 @@
 package com.mparticle.kits
 
-import android.app.Activity
-import android.content.Context
-import android.net.Uri
 import android.util.SparseBooleanArray
 import com.braze.Braze
 import com.braze.models.outgoing.BrazeProperties
@@ -10,7 +7,6 @@ import com.mparticle.MPEvent
 import com.mparticle.MParticle
 import com.mparticle.MParticle.IdentityType
 import com.mparticle.MParticleOptions
-import com.mparticle.MParticleOptions.DataplanOptions
 import com.mparticle.commerce.CommerceEvent
 import com.mparticle.commerce.Impression
 import com.mparticle.commerce.Product
@@ -20,8 +16,6 @@ import com.mparticle.consent.ConsentState
 import com.mparticle.consent.GDPRConsent
 import com.mparticle.identity.IdentityApi
 import com.mparticle.identity.MParticleUser
-import com.mparticle.internal.CoreCallbacks
-import com.mparticle.internal.CoreCallbacks.KitListener
 import com.mparticle.kits.mocks.MockAppboyKit
 import com.mparticle.kits.mocks.MockContextApplication
 import com.mparticle.kits.mocks.MockKitConfiguration
@@ -34,9 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito
-import org.mockito.Mockito.mock
 import org.mockito.MockitoAnnotations
-import java.lang.ref.WeakReference
 import java.lang.reflect.Method
 import java.math.BigDecimal
 import java.util.Calendar
@@ -1096,11 +1088,13 @@ class AppboyKitTests {
     fun testSearchKeyInNestedMap_When_Input_Key_Is_Empty_String() {
         val kit = MockAppboyKit()
         val map = mapOf(
-            "GDPR" to true,
-            "marketing" to mapOf(
-                "consented" to false,
-                "document" to mapOf(
-                    "timestamp" to 1711038269644
+            "FeatureEnabled" to true,
+            "settings" to mapOf(
+                "darkMode" to false,
+                "notifications" to mapOf(
+                    "email" to false,
+                    "push" to true,
+                    "lastUpdated" to 1633046400000L
                 )
             )
         )
