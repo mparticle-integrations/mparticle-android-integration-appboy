@@ -401,8 +401,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         user: FilteredMParticleUser
     ) {
         setConsent(newState)
-
-
     }
 
     private fun setConsent(consentState: ConsentState) {
