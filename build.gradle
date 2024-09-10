@@ -48,6 +48,6 @@ repositories {
 
 dependencies {
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
-    api 'com.braze:android-sdk-ui:30.4.0'
+    api 'com.braze:android-sdk-ui:32.1.0'
     testImplementation  files('libs/java-json.jar')
 }
