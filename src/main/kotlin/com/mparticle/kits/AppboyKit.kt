@@ -615,7 +615,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
         var sanitizedProductName: String = product.sku
         try {
-            if (settings[FORWARD_SKU_AS_PRODUCT_NAME] == "True") {
+            if (settings[REPLACE_SKU_AS_PRODUCT_NAME] == "True") {
                 sanitizedProductName = product.name
             }
         } catch (e: Exception) {
@@ -1086,7 +1086,8 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"
-        const val FORWARD_SKU_AS_PRODUCT_NAME = "forwardSkuAsProductName"
+        // if this flag is true, kit will send Product name as sku
+        const val REPLACE_SKU_AS_PRODUCT_NAME = "forwardSkuAsProductName"
         private const val PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes"
         private const val PREF_KEY_CURRENT_EMAIL = "appboy::current_email"
         private const val FLUSH_DELAY = 5000
