@@ -964,7 +964,7 @@ class AppboyKitTests {
         eaaObject.put("eaa", mapValue)
         jsonObject.put("hs", eaaObject)
 
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0)
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -1002,7 +1002,7 @@ class AppboyKitTests {
         eaaObject.put("ear", mapValue)
         jsonObject.put("hs", eaaObject)
 
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0)
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -1033,7 +1033,7 @@ class AppboyKitTests {
         eaaObject.put("eas", mapValue)
         jsonObject.put("hs", eaaObject)
 
-        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0) 
+        Mockito.`when`(mTypeFilters!!.size()).thenReturn(0)
 
         var kitConfiguration = MockKitConfiguration.createKitConfiguration(jsonObject)
         kit.configuration = kitConfiguration
@@ -1289,5 +1289,76 @@ class AppboyKitTests {
 
         TestCase.assertEquals(0, currentUser.getCustomUserAttribute().size)
 
+    }
+
+    @Test
+    fun testPurchase_Forward_product_name() {
+        var settings = HashMap<String, String?>()
+        settings[AppboyKit.APPBOY_KEY] = "key"
+        settings[AppboyKit.REPLACE_SKU_AS_PRODUCT_NAME] = "True"
+        val kit = MockAppboyKit()
+
+        kit.configuration =
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+        kit.onKitCreate(settings, MockContextApplication())
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .build()
+        val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product)
+            .currency("Moon Dollars")
+            .build()
+        kit.logTransaction(commerceEvent, product)
+        val braze = Braze
+        val purchases = braze.purchases
+        Assert.assertEquals(1, purchases.size.toLong())
+        val purchase = purchases[0]
+        Assert.assertEquals("product name", purchase.sku)
+        Assert.assertNull(purchase.purchaseProperties.properties[CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE])
+    }
+
+    @Test
+    fun testPurchase_Forward_product_name_When_flag_IS_FALSE() {
+        var settings = HashMap<String, String?>()
+        settings[AppboyKit.APPBOY_KEY] = "key"
+        settings[AppboyKit.REPLACE_SKU_AS_PRODUCT_NAME] = "False"
+        val kit = MockAppboyKit()
+
+        kit.configuration =
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+        kit.onKitCreate(settings, MockContextApplication())
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .build()
+        val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product)
+            .currency("Moon Dollars")
+            .build()
+        kit.logTransaction(commerceEvent, product)
+        val braze = Braze
+        val purchases = braze.purchases
+        Assert.assertEquals(1, purchases.size.toLong())
+        val purchase = purchases[0]
+        Assert.assertEquals("sku1", purchase.sku)
+        Assert.assertNull(purchase.purchaseProperties.properties[CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE])
+    }
+
+    @Test
+    fun testPurchase_Forward_product_name_When_flag_IS_Null() {
+        var settings = HashMap<String, String?>()
+        settings[AppboyKit.APPBOY_KEY] = "key"
+        val kit = MockAppboyKit()
+
+        kit.configuration =
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+        kit.onKitCreate(settings, MockContextApplication())
+        val product = Product.Builder("product name", "sku1", 4.5)
+            .build()
+        val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product)
+            .currency("Moon Dollars")
+            .build()
+        kit.logTransaction(commerceEvent, product)
+        val braze = Braze
+        val purchases = braze.purchases
+        Assert.assertEquals(1, purchases.size.toLong())
+        val purchase = purchases[0]
+        Assert.assertEquals("sku1", purchase.sku)
+        Assert.assertNull(purchase.purchaseProperties.properties[CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE])
     }
 }
