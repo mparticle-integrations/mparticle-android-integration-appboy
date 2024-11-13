@@ -1295,7 +1295,7 @@ class AppboyKitTests {
     fun testPurchase_Forward_product_name() {
         var settings = HashMap<String, String?>()
         settings[AppboyKit.APPBOY_KEY] = "key"
-        settings[AppboyKit.FORWARD_SKU_AS_PRODUCT_NAME] = "True"
+        settings[AppboyKit.REPLACE_SKU_AS_PRODUCT_NAME] = "True"
         val kit = MockAppboyKit()
 
         kit.configuration =
@@ -1319,7 +1319,7 @@ class AppboyKitTests {
     fun testPurchase_Forward_product_name_When_flag_IS_FALSE() {
         var settings = HashMap<String, String?>()
         settings[AppboyKit.APPBOY_KEY] = "key"
-        settings[AppboyKit.FORWARD_SKU_AS_PRODUCT_NAME] = "False"
+        settings[AppboyKit.REPLACE_SKU_AS_PRODUCT_NAME] = "False"
         val kit = MockAppboyKit()
 
         kit.configuration =
