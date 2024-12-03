@@ -1087,7 +1087,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"
         // if this flag is true, kit will send Product name as sku
-        const val REPLACE_SKU_AS_PRODUCT_NAME = "forwardSkuAsProductName"
+        const val REPLACE_SKU_AS_PRODUCT_NAME = "replaceSkuWithProductName"
         private const val PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes"
         private const val PREF_KEY_CURRENT_EMAIL = "appboy::current_email"
         private const val FLUSH_DELAY = 5000
