@@ -30,7 +30,7 @@ class MockKitManagerImpl(
             CoreCallbacks::class.java
         )
     ) {
-        Mockito.`when`(mCoreCallbacks.kitListener).thenReturn(KitListener.EMPTY)
+        Mockito.`when`(mCoreCallbacks.getKitListener()).thenReturn(KitListener.EMPTY)
     }
 
     @Throws(JSONException::class)
