@@ -34,7 +34,7 @@ apply plugin: 'com.mparticle.kit'
 
 android {
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 25
     }
     compileOptions {
         sourceCompatibility 1.8
