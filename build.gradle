@@ -40,6 +40,11 @@ android {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
+    testOptions {
+        unitTests.all {
+            jvmArgs += ['--add-opens', 'java.base/java.lang=ALL-UNNAMED']
+        }
+    }
 }
 
 repositories {
