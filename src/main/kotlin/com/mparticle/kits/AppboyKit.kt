@@ -47,6 +47,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     var bundleCommerceEvents = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
+    var subscriptionGroupIds: MutableMap<String, String>? = mutableMapOf()
     private val dataFlushHandler = Handler()
     private var dataFlushRunnable: Runnable? = null
     private var forwardScreenViews = false
@@ -85,6 +86,9 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
+        subscriptionGroupIds = settings[SUBSCRIPTION_GROUP_MAPPING]?.let {
+            getSubscriptionGroupIds(it)
+        }
         if (key != null) {
             val config = BrazeConfig.Builder().setApiKey(key)
                 .setSdkFlavor(SdkFlavor.MPARTICLE)
@@ -318,10 +322,27 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                         else value.setGender(Gender.MALE)
                     }
                     else -> {
-                        if (key.startsWith("$")) {
-                            key = key.substring(1)
+                        if (subscriptionGroupIds?.containsKey(key) == true) {
+                            if (attributeValue == "true") {
+                                value.addToSubscriptionGroup(
+                                    subscriptionGroupIds?.get(key).toString()
+                                )
+                            } else if (attributeValue == "false") {
+                                value.removeFromSubscriptionGroup(
+                                    subscriptionGroupIds?.get(key).toString()
+                                )
+                            } else {
+                                Logger.warning(
+                                    "unable to set Subscription Group ID for user attribute: "
+                                            + key + "due to invalid value data type. expected value data type should be Boolean"
+                                )
+                            }
+                        } else {
+                            if (key.startsWith("$")) {
+                                key = key.substring(1)
+                            }
+                            userAttributeSetter?.parseValue(key, attributeValue)
                         }
-                        userAttributeSetter?.parseValue(key, attributeValue)
                     }
                 }
                 queueDataFlush()
@@ -966,6 +987,24 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         return promotionArray
     }
 
+    private fun getSubscriptionGroupIds(subscriptionGroupMap: String): MutableMap<String, String> {
+        val subscriptionGroupsArray = JSONArray(subscriptionGroupMap)
+        val subscriptionGroupIds = mutableMapOf<String, String>()
+
+        if (subscriptionGroupMap.isEmpty()) {
+            return subscriptionGroupIds
+        }
+
+        for (i in 0 until subscriptionGroupsArray.length()) {
+            val subscriptionGroup = subscriptionGroupsArray.getJSONObject(i)
+            val key = subscriptionGroup.getString("map")
+            val value = subscriptionGroup.getString("value")
+            subscriptionGroupIds[key] = value
+        }
+
+        return subscriptionGroupIds
+    }
+
     fun getImpressionListParameters(impressionList: List<Impression>): JSONArray {
         val impressionArray = JSONArray()
         for ((i, impression) in impressionList.withIndex()) {
@@ -1083,6 +1122,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
         const val BUNDLE_COMMERCE_EVENTS = "bundleCommerceEventData"
+        const val SUBSCRIPTION_GROUP_MAPPING = "subscriptionGroupMapping"
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"

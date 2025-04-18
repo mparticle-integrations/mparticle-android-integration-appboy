@@ -238,6 +238,25 @@ class AppboyKitTests {
         Assert.assertNull(kit.getCalendarMinusYears(-1))
     }
 
+    @Test
+    fun testSetSubscriptionGroupIds() {
+        val settings = HashMap<String, String>()
+        settings[AppboyKit.APPBOY_KEY] = "key"
+        settings[AppboyKit.HOST] = hostName
+        settings["subscriptionGroupMapping"] = "" +
+                "[{\"jsmap\":null,\"map\":\"test1\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000000\"}," +
+                "{\"jsmap\":null,\"map\":\"test2\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000001\"}," +
+                "{\"jsmap\":null,\"map\":\"test3\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000002\"}]"
+        val kit = MockAppboyKit()
+        val currentUser = braze.currentUser
+
+        kit.onKitCreate(settings, MockContextApplication())
+        kit.setUserAttribute("test1", "true");
+        kit.setUserAttribute("test2", "false");
+        kit.setUserAttribute("test3", "notABoolean");
+        Assert.assertEquals(2, currentUser.getCustomUserAttribute().size.toLong())
+    }
+
 //    @Test
 //    fun testSetUserAttributeAge() {
 //        val currentYear = Calendar.getInstance()[Calendar.YEAR]
