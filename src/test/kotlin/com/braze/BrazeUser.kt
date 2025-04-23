@@ -58,6 +58,16 @@ class BrazeUser {
         return true
     }
 
+    fun addToSubscriptionGroup(key: String): Boolean {
+        customUserAttributes[key] = true
+        return true
+    }
+
+    fun removeFromSubscriptionGroup(key: String): Boolean {
+        customUserAttributes[key] = false
+        return true
+    }
+
     fun getCustomAttribute(): HashMap<String, MutableList<String>> {
         return customAttributeArray
     }
