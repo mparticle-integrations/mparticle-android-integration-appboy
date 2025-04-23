@@ -323,19 +323,19 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     }
                     else -> {
                         if (subscriptionGroupIds?.containsKey(key) == true) {
-                            if (attributeValue == "true") {
-                                value.addToSubscriptionGroup(
-                                    subscriptionGroupIds?.get(key).toString()
-                                )
-                            } else if (attributeValue == "false") {
-                                value.removeFromSubscriptionGroup(
-                                    subscriptionGroupIds?.get(key).toString()
-                                )
-                            } else {
-                                Logger.warning(
-                                    "unable to set Subscription Group ID for user attribute: "
-                                            + key + "due to invalid value data type. expected value data type should be Boolean"
-                                )
+                            val groupId = subscriptionGroupIds?.get(key)
+                            when (attributeValue.lowercase()) {
+                                "true" -> {
+                                    groupId?.let { value.addToSubscriptionGroup(it) }
+                                }
+                                "false" -> {
+                                    groupId?.let { value.removeFromSubscriptionGroup(it) }
+                                }
+                                else -> {
+                                    Logger.warning(
+                                        "Unable to set Subscription Group ID for user attribute: $key due to invalid value data type. Expected Boolean."
+                                    )
+                                }
                             }
                         } else {
                             if (key.startsWith("$")) {
@@ -988,21 +988,26 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     }
 
     private fun getSubscriptionGroupIds(subscriptionGroupMap: String): MutableMap<String, String> {
-        val subscriptionGroupsArray = JSONArray(subscriptionGroupMap)
         val subscriptionGroupIds = mutableMapOf<String, String>()
 
         if (subscriptionGroupMap.isEmpty()) {
             return subscriptionGroupIds
         }
 
-        for (i in 0 until subscriptionGroupsArray.length()) {
-            val subscriptionGroup = subscriptionGroupsArray.getJSONObject(i)
-            val key = subscriptionGroup.getString("map")
-            val value = subscriptionGroup.getString("value")
-            subscriptionGroupIds[key] = value
-        }
+        val subscriptionGroupsArray = JSONArray(subscriptionGroupMap)
 
-        return subscriptionGroupIds
+        return try{
+            for (i in 0 until subscriptionGroupsArray.length()) {
+                val subscriptionGroup = subscriptionGroupsArray.getJSONObject(i)
+                val key = subscriptionGroup.getString("map")
+                val value = subscriptionGroup.getString("value")
+                subscriptionGroupIds[key] = value
+            }
+            subscriptionGroupIds
+        } catch (e: JSONException) {
+            Logger.warning("Braze, unable to parse \"subscriptionGroup\"")
+            mutableMapOf()
+        }
     }
 
     fun getImpressionListParameters(impressionList: List<Impression>): JSONArray {
