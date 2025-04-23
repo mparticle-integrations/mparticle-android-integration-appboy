@@ -328,9 +328,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                                 "true" -> {
                                     groupId?.let { value.addToSubscriptionGroup(it) }
                                 }
+
                                 "false" -> {
                                     groupId?.let { value.removeFromSubscriptionGroup(it) }
                                 }
+
                                 else -> {
                                     Logger.warning(
                                         "Unable to set Subscription Group ID for user attribute: $key due to invalid value data type. Expected Boolean."
@@ -996,7 +998,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
         val subscriptionGroupsArray = JSONArray(subscriptionGroupMap)
 
-        return try{
+        return try {
             for (i in 0 until subscriptionGroupsArray.length()) {
                 val subscriptionGroup = subscriptionGroupsArray.getJSONObject(i)
                 val key = subscriptionGroup.getString("map")
