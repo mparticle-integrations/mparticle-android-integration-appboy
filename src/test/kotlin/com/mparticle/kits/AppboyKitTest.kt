@@ -441,6 +441,9 @@ class AppboyKitTests {
         val customAttributes = HashMap<String, String>()
         customAttributes["key1"] = "value1"
         customAttributes["key #2"] = "value #3"
+        val productCustomAttributes = HashMap<String, String>()
+        productCustomAttributes["productKey1"] = "value1"
+        productCustomAttributes["productKey2"] = "value2"
         val transactionAttributes = TransactionAttributes("the id")
             .setTax(100.0)
             .setShipping(12.0)
@@ -449,6 +452,11 @@ class AppboyKitTests {
             .setAffiliation("the affiliation")
         val product = Product.Builder("product name", "sku1", 4.5)
             .quantity(5.0)
+            .brand("testBrand")
+            .variant("testVariant")
+            .position(1)
+            .category("testCategory")
+            .customAttributes(productCustomAttributes)
             .build()
         val commerceEvent = CommerceEvent.Builder(Product.PURCHASE, product)
             .currency("Moon Dollars")
@@ -491,10 +499,34 @@ class AppboyKitTests {
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
             "the affiliation"
         )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME),
+            "product name"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY),
+            "testCategory"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND),
+            "testBrand"
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION),
+            1
+        )
+        Assert.assertEquals(
+            properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT),
+            "testVariant"
+        )
 
         //Custom Attributes
         Assert.assertEquals(properties.remove("key1"), "value1")
         Assert.assertEquals(properties.remove("key #2"), "value #3")
+
+        //Product Custom Attributes
+        Assert.assertEquals(properties.remove("productKey1"), "value1")
+        Assert.assertEquals(properties.remove("productKey2"), "value2")
 
         val emptyAttributes = HashMap<String, String>()
         Assert.assertEquals(emptyAttributes, properties)
