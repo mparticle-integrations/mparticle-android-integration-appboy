@@ -636,6 +636,33 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         }
 
+        product.couponCode?.let {
+            purchaseProperties.addProperty(
+                CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE,
+                it
+            )
+        }
+        product.brand?.let {
+            purchaseProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND, it)
+        }
+        product.category?.let {
+            purchaseProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY, it)
+        }
+        product.name.let {
+            purchaseProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_NAME, it)
+        }
+        product.variant?.let {
+            purchaseProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT, it)
+        }
+        product.position?.let {
+            purchaseProperties.addProperty(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION, it)
+        }
+        product.customAttributes?.let {
+            for ((key, value) in it) {
+                purchaseProperties.addProperty(key, value)
+            }
+        }
+
         var sanitizedProductName: String = product.sku
         try {
             if (settings[REPLACE_SKU_AS_PRODUCT_NAME] == "True") {
