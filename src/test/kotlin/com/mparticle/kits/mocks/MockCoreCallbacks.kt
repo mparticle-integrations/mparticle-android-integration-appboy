@@ -59,6 +59,6 @@ class MockCoreCallbacks : CoreCallbacks {
     }
 
     override fun getKitListener(): KitListener {
-        return KitListener.EMPTY
+        return CoreCallbacks.KitListener.EMPTY
     }
 }
