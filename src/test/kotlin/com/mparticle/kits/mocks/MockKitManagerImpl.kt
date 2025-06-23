@@ -30,7 +30,14 @@ class MockKitManagerImpl(
             CoreCallbacks::class.java
         )
     ) {
-        Mockito.`when`(mCoreCallbacks.getKitListener()).thenReturn(CoreCallbacks.KitListener.EMPTY)
+        Mockito.`when`(mCoreCallbacks.getKitListener()).thenReturn(object : KitListener {
+            override fun kitFound(kitId: Int) {}
+            override fun kitConfigReceived(kitId: Int, configuration: String?) {}
+            override fun kitExcluded(kitId: Int, reason: String?) {}
+            override fun kitStarted(kitId: Int) {}
+            override fun onKitApiCalled(kitId: Int, used: Boolean?, vararg objects: Any?) {}
+            override fun onKitApiCalled(methodName: String?, kitId: Int, used: Boolean?, vararg objects: Any?) {}
+        })
     }
 
     @Throws(JSONException::class)
