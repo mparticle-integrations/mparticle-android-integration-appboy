@@ -1,2 +1,1 @@
-<manifest package="com.mparticle.kits.appboy"
-    xmlns:android="http://schemas.android.com/apk/res/android"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"/>
