@@ -35,11 +35,11 @@ apply plugin: 'com.mparticle.kit'
 
 android {
     namespace 'com.mparticle.kits.appboy'
-    defaultConfig {
-        minSdkVersion 21
-    }
     buildFeatures {
         buildConfig = true
+    }
+    defaultConfig {
+        minSdkVersion 21
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -47,12 +47,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = '17'
-    }
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
-        ignoreWarnings = true
-        baseline = file("lint-baseline.xml")
     }
     testOptions {
         unitTests.all {
