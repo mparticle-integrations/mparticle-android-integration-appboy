@@ -42,7 +42,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.EnumSet
+import java.util.LinkedList
 import kotlin.collections.HashMap
 
 /**
@@ -56,7 +59,6 @@ open class AppboyKit :
     PushListener,
     IdentityListener,
     KitIntegration.UserAttributeListener {
-
     var enableTypeDetection = false
     var bundleCommerceEvents = false
     var isMpidIdentityType = false
