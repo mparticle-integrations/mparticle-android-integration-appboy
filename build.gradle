@@ -48,9 +48,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-    lint {
-        abortOnError = false
-    }
+
     testOptions {
         unitTests.all {
             jvmArgs += ['--add-opens', 'java.base/java.lang=ALL-UNNAMED']
