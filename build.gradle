@@ -41,6 +41,12 @@ android {
     defaultConfig {
         minSdkVersion 21
     }
+    lint {
+        // Workaround for lint internal crash
+        abortOnError false
+        // Ignore obsolete custom lint checks from older fragment library
+        disable 'ObsoleteLintCustomCheck'
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
