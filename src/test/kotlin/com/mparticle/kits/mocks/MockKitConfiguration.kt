@@ -3,8 +3,6 @@ package com.mparticle.kits.mocks
 import android.util.SparseBooleanArray
 import com.mparticle.internal.Logger
 import com.mparticle.kits.KitConfiguration
-import com.mparticle.kits.mocks.MockKitConfiguration
-import com.mparticle.kits.mocks.MockKitConfiguration.MockSparseBooleanArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.HashMap
@@ -42,7 +40,10 @@ open class MockKitConfiguration : KitConfiguration() {
     internal inner class MockSparseBooleanArray : SparseBooleanArray() {
         override fun get(key: Int): Boolean = get(key, false)
 
-        override fun get(key: Int, valueIfKeyNotFound: Boolean): Boolean {
+        override fun get(
+            key: Int,
+            valueIfKeyNotFound: Boolean,
+        ): Boolean {
             print("SparseArray getting: $key")
             return if (map.containsKey(key)) {
                 true
@@ -52,7 +53,11 @@ open class MockKitConfiguration : KitConfiguration() {
         }
 
         var map: MutableMap<Int, Boolean> = HashMap()
-        override fun put(key: Int, value: Boolean) {
+
+        override fun put(
+            key: Int,
+            value: Boolean,
+        ) {
             map[key] = value
         }
 

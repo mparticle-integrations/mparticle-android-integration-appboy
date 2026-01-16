@@ -7,8 +7,11 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.res.Resources
 
-class MockApplication(var mContext: MockContext) : Application() {
+class MockApplication(
+    var mContext: MockContext,
+) : Application() {
     var mCallbacks: ActivityLifecycleCallbacks? = null
+
     override fun registerActivityLifecycleCallbacks(callback: ActivityLifecycleCallbacks) {
         mCallbacks = callback
     }
@@ -21,7 +24,10 @@ class MockApplication(var mContext: MockContext) : Application() {
 
     override fun getSystemService(name: String): Any? = mContext.getSystemService(name)
 
-    override fun getSharedPreferences(name: String, mode: Int): SharedPreferences = mContext.getSharedPreferences(name, mode)
+    override fun getSharedPreferences(
+        name: String,
+        mode: Int,
+    ): SharedPreferences = mContext.getSharedPreferences(name, mode)
 
     override fun getPackageManager(): PackageManager = mContext.packageManager
 

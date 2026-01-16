@@ -7,8 +7,9 @@ import com.mparticle.audience.AudienceTask
 import com.mparticle.consent.ConsentState
 import com.mparticle.identity.MParticleUser
 
-class MockUser(var identities: Map<IdentityType, String>) : MParticleUser {
-
+class MockUser(
+    var identities: Map<IdentityType, String>,
+) : MParticleUser {
     override fun getId(): Long = 0
 
     override fun getUserAttributes(): Map<String, Any> = mapOf()
@@ -19,11 +20,20 @@ class MockUser(var identities: Map<IdentityType, String>) : MParticleUser {
 
     override fun getUserIdentities(): Map<IdentityType, String> = identities
 
-    override fun setUserAttribute(s: String, o: Any): Boolean = false
+    override fun setUserAttribute(
+        s: String,
+        o: Any,
+    ): Boolean = false
 
-    override fun setUserAttributeList(s: String, o: Any): Boolean = false
+    override fun setUserAttributeList(
+        s: String,
+        o: Any,
+    ): Boolean = false
 
-    override fun incrementUserAttribute(p0: String, p1: Number?): Boolean = false
+    override fun incrementUserAttribute(
+        p0: String,
+        p1: Number?,
+    ): Boolean = false
 
     override fun removeUserAttribute(s: String): Boolean = false
 

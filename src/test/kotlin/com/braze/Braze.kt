@@ -8,7 +8,6 @@ import com.mparticle.kits.BrazePurchase
 import java.math.BigDecimal
 
 class Braze {
-
     fun getCurrentUser(): BrazeUser = Companion.currentUser
 
     fun getCustomAttributeArray(): java.util.HashMap<String, MutableList<String>> = Companion.currentUser.getCustomAttribute()
@@ -17,7 +16,10 @@ class Braze {
         callback.onSuccess(currentUser)
     }
 
-    fun logCustomEvent(key: String, brazeProperties: BrazeProperties) {
+    fun logCustomEvent(
+        key: String,
+        brazeProperties: BrazeProperties,
+    ) {
         events[key] = brazeProperties
     }
 
@@ -50,7 +52,10 @@ class Braze {
         val currentUser = BrazeUser()
 
         @JvmStatic
-        fun configure(context: Context?, config: BrazeConfig?) = true
+        fun configure(
+            context: Context?,
+            config: BrazeConfig?,
+        ) = true
 
         @JvmStatic
         fun getInstance(context: Context?): Braze = Braze()

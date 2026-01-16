@@ -7,6 +7,7 @@ import org.mockito.Mockito
 
 class MockAppboyKit : AppboyKit() {
     val calledAuthority = arrayOfNulls<String>(1)
+
     override fun setAuthority(authority: String?) {
         calledAuthority[0] = authority
     }
@@ -16,12 +17,13 @@ class MockAppboyKit : AppboyKit() {
     }
 
     init {
-        kitManager = MockKitManagerImpl(
-            Mockito.mock(Context::class.java),
-            Mockito.mock(
-                ReportingManager::class.java,
-            ),
-            MockCoreCallbacks(),
-        )
+        kitManager =
+            MockKitManagerImpl(
+                Mockito.mock(Context::class.java),
+                Mockito.mock(
+                    ReportingManager::class.java,
+                ),
+                MockCoreCallbacks(),
+            )
     }
 }

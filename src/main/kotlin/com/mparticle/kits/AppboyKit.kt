@@ -71,7 +71,10 @@ open class AppboyKit :
 
     override fun getName() = NAME
 
-    public override fun onKitCreate(settings: Map<String, String?>, context: Context): List<ReportingMessage>? {
+    public override fun onKitCreate(
+        settings: Map<String, String?>,
+        context: Context,
+    ): List<ReportingMessage>? {
         val key = settings[APPBOY_KEY]
         require(!KitUtils.isEmpty(key)) { "Braze key is empty." }
 
@@ -152,9 +155,16 @@ open class AppboyKit :
 
     override fun leaveBreadcrumb(breadcrumb: String): List<ReportingMessage> = emptyList()
 
-    override fun logError(message: String, errorAttributes: Map<String, String>): List<ReportingMessage> = emptyList()
+    override fun logError(
+        message: String,
+        errorAttributes: Map<String, String>,
+    ): List<ReportingMessage> = emptyList()
 
-    override fun logException(exception: Exception, exceptionAttributes: Map<String, String>, message: String): List<ReportingMessage> = emptyList()
+    override fun logException(
+        exception: Exception,
+        exceptionAttributes: Map<String, String>,
+        message: String,
+    ): List<ReportingMessage> = emptyList()
 
     override fun logEvent(event: MPEvent): List<ReportingMessage> {
         val newAttributes: MutableMap<String, Any?> = HashMap()
@@ -169,7 +179,8 @@ open class AppboyKit :
                 }
             }
             Braze.getInstance(context).logCustomEvent(event.eventName, properties)
-            Braze.getInstance(context)
+            Braze
+                .getInstance(context)
                 .getCurrentUser(
                     object : IValueCallback<BrazeUser> {
                         override fun onSuccess(value: BrazeUser) {
@@ -202,31 +213,35 @@ open class AppboyKit :
         return listOf(ReportingMessage.fromEvent(this, event).setAttributes(newAttributes))
     }
 
-    override fun logScreen(screenName: String, screenAttributes: Map<String, String>?): List<ReportingMessage> = if (forwardScreenViews) {
-        if (screenAttributes == null) {
-            Braze.getInstance(context).logCustomEvent(screenName)
-        } else {
-            val properties = BrazeProperties()
-            val propertyParser = BrazePropertiesSetter(properties, enableTypeDetection)
-            for ((key, value) in screenAttributes) {
-                propertyParser.parseValue(key, value)
+    override fun logScreen(
+        screenName: String,
+        screenAttributes: Map<String, String>?,
+    ): List<ReportingMessage> =
+        if (forwardScreenViews) {
+            if (screenAttributes == null) {
+                Braze.getInstance(context).logCustomEvent(screenName)
+            } else {
+                val properties = BrazeProperties()
+                val propertyParser = BrazePropertiesSetter(properties, enableTypeDetection)
+                for ((key, value) in screenAttributes) {
+                    propertyParser.parseValue(key, value)
+                }
+                Braze.getInstance(context).logCustomEvent(screenName, properties)
             }
-            Braze.getInstance(context).logCustomEvent(screenName, properties)
+            queueDataFlush()
+            val messages: MutableList<ReportingMessage> = LinkedList()
+            messages.add(
+                ReportingMessage(
+                    this,
+                    ReportingMessage.MessageType.SCREEN_VIEW,
+                    System.currentTimeMillis(),
+                    screenAttributes,
+                ),
+            )
+            messages
+        } else {
+            emptyList()
         }
-        queueDataFlush()
-        val messages: MutableList<ReportingMessage> = LinkedList()
-        messages.add(
-            ReportingMessage(
-                this,
-                ReportingMessage.MessageType.SCREEN_VIEW,
-                System.currentTimeMillis(),
-                screenAttributes,
-            ),
-        )
-        messages
-    } else {
-        emptyList()
-    }
 
     override fun logLtvIncrease(
         valueIncreased: BigDecimal,
@@ -284,9 +299,13 @@ open class AppboyKit :
         return messages
     }
 
-    override fun setUserAttribute(keyIn: String, attributeValue: String) {
+    override fun setUserAttribute(
+        keyIn: String,
+        attributeValue: String,
+    ) {
         var key = keyIn
-        Braze.getInstance(context)
+        Braze
+            .getInstance(context)
             .getCurrentUser(
                 object : IValueCallback<BrazeUser> {
                     override fun onSuccess(value: BrazeUser) {
@@ -372,7 +391,10 @@ open class AppboyKit :
     }
 
     // Expected Date Format @"yyyy'-'MM'-'dd"
-    private fun useDobString(value: String, user: BrazeUser) {
+    private fun useDobString(
+        value: String,
+        user: BrazeUser,
+    ) {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         try {
             val calendar = Calendar.getInstance()
@@ -387,8 +409,12 @@ open class AppboyKit :
         }
     }
 
-    override fun setUserAttributeList(key: String, list: List<String>) {
-        Braze.getInstance(context)
+    override fun setUserAttributeList(
+        key: String,
+        list: List<String>,
+    ) {
+        Braze
+            .getInstance(context)
             .getCurrentUser(
                 object : IValueCallback<BrazeUser> {
                     override fun onSuccess(value: BrazeUser) {
@@ -404,19 +430,38 @@ open class AppboyKit :
             )
     }
 
-    override fun onIncrementUserAttribute(key: String?, incrementedBy: Number?, value: String?, user: FilteredMParticleUser?) {
+    override fun onIncrementUserAttribute(
+        key: String?,
+        incrementedBy: Number?,
+        value: String?,
+        user: FilteredMParticleUser?,
+    ) {
     }
 
-    override fun onRemoveUserAttribute(key: String?, user: FilteredMParticleUser?) {
+    override fun onRemoveUserAttribute(
+        key: String?,
+        user: FilteredMParticleUser?,
+    ) {
     }
 
-    override fun onSetUserAttribute(key: String?, value: Any?, user: FilteredMParticleUser?) {
+    override fun onSetUserAttribute(
+        key: String?,
+        value: Any?,
+        user: FilteredMParticleUser?,
+    ) {
     }
 
-    override fun onSetUserTag(key: String?, user: FilteredMParticleUser?) {
+    override fun onSetUserTag(
+        key: String?,
+        user: FilteredMParticleUser?,
+    ) {
     }
 
-    override fun onSetUserAttributeList(attributeKey: String?, attributeValueList: MutableList<String>?, user: FilteredMParticleUser?) {
+    override fun onSetUserAttributeList(
+        attributeKey: String?,
+        attributeValueList: MutableList<String>?,
+        user: FilteredMParticleUser?,
+    ) {
     }
 
     override fun onSetAllUserAttributes(
@@ -428,7 +473,11 @@ open class AppboyKit :
 
     override fun supportsAttributeLists(): Boolean = true
 
-    override fun onConsentStateUpdated(oldState: ConsentState, newState: ConsentState, user: FilteredMParticleUser) {
+    override fun onConsentStateUpdated(
+        oldState: ConsentState,
+        newState: ConsentState,
+        user: FilteredMParticleUser,
+    ) {
         setConsent(newState)
     }
 
@@ -460,8 +509,12 @@ open class AppboyKit :
         }
     }
 
-    private fun setConsentValueToBraze(key: String, value: Boolean) {
-        Braze.getInstance(context)
+    private fun setConsentValueToBraze(
+        key: String,
+        value: Boolean,
+    ) {
+        Braze
+            .getInstance(context)
             .getCurrentUser(
                 object : IValueCallback<BrazeUser> {
                     override fun onSuccess(brazeUser: BrazeUser) {
@@ -520,7 +573,10 @@ open class AppboyKit :
         return topLevelMap
     }
 
-    private fun searchKeyInNestedMap(map: Map<*, *>, key: Any): Any? {
+    private fun searchKeyInNestedMap(
+        map: Map<*, *>,
+        key: Any,
+    ): Any? {
         if (map.isNullOrEmpty()) {
             return null
         }
@@ -553,7 +609,10 @@ open class AppboyKit :
     /**
      * This is called when the Kit is added to the mParticle SDK, typically on app-startup.
      */
-    override fun setAllUserAttributes(attributes: Map<String, String>, attributeLists: Map<String, List<String>>) {
+    override fun setAllUserAttributes(
+        attributes: Map<String, String>,
+        attributeLists: Map<String, List<String>>,
+    ) {
         if (!kitPreferences.getBoolean(PREF_KEY_HAS_SYNCED_ATTRIBUTES, false)) {
             for ((key, value) in attributes) {
                 setUserAttribute(key, value)
@@ -567,7 +626,8 @@ open class AppboyKit :
 
     override fun removeUserAttribute(keyIn: String) {
         var key = keyIn
-        Braze.getInstance(context)
+        Braze
+            .getInstance(context)
             .getCurrentUser(
                 object : IValueCallback<BrazeUser> {
                     override fun onSuccess(value: BrazeUser) {
@@ -597,13 +657,19 @@ open class AppboyKit :
             )
     }
 
-    override fun setUserIdentity(identityType: IdentityType, identity: String) {}
+    override fun setUserIdentity(
+        identityType: IdentityType,
+        identity: String,
+    ) {}
 
     override fun removeUserIdentity(identityType: IdentityType) {}
 
     override fun logout(): List<ReportingMessage> = emptyList()
 
-    fun logTransaction(event: CommerceEvent?, product: Product) {
+    fun logTransaction(
+        event: CommerceEvent?,
+        product: Product,
+    ) {
         val purchaseProperties = BrazeProperties()
         val currency = arrayOfNulls<String>(1)
         val commerceTypeParser: StringTypeParser =
@@ -613,19 +679,28 @@ open class AppboyKit :
             )
         val onAttributeExtracted: OnAttributeExtracted =
             object : OnAttributeExtracted {
-                override fun onAttributeExtracted(key: String, value: String) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: String,
+                ) {
                     if (!checkCurrency(key, value)) {
                         commerceTypeParser.parseValue(key, value)
                     }
                 }
 
-                override fun onAttributeExtracted(key: String, value: Double) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: Double,
+                ) {
                     if (!checkCurrency(key, value)) {
                         purchaseProperties.addProperty(key, value)
                     }
                 }
 
-                override fun onAttributeExtracted(key: String, value: Int) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: Int,
+                ) {
                     purchaseProperties.addProperty(key, value)
                 }
 
@@ -637,12 +712,18 @@ open class AppboyKit :
                     }
                 }
 
-                private fun checkCurrency(key: String, value: Any?): Boolean = if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
-                    currency[0] = value?.toString()
-                    true
-                } else {
-                    false
-                }
+                private fun checkCurrency(
+                    key: String,
+                    value: Any?,
+                ): Boolean =
+                    if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE ==
+                        key
+                    ) {
+                        currency[0] = value?.toString()
+                        true
+                    } else {
+                        false
+                    }
             }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
         var currencyValue = currency[0]
@@ -711,19 +792,28 @@ open class AppboyKit :
             )
         val onAttributeExtracted: OnAttributeExtracted =
             object : OnAttributeExtracted {
-                override fun onAttributeExtracted(key: String, value: String) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: String,
+                ) {
                     if (!checkCurrency(key, value)) {
                         commerceTypeParser.parseValue(key, value)
                     }
                 }
 
-                override fun onAttributeExtracted(key: String, value: Double) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: Double,
+                ) {
                     if (!checkCurrency(key, value)) {
                         properties.addProperty(key, value)
                     }
                 }
 
-                override fun onAttributeExtracted(key: String, value: Int) {
+                override fun onAttributeExtracted(
+                    key: String,
+                    value: Int,
+                ) {
                     properties.addProperty(key, value)
                 }
 
@@ -735,12 +825,18 @@ open class AppboyKit :
                     }
                 }
 
-                private fun checkCurrency(key: String, value: Any?): Boolean = if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
-                    currency[0] = value?.toString()
-                    true
-                } else {
-                    false
-                }
+                private fun checkCurrency(
+                    key: String,
+                    value: Any?,
+                ): Boolean =
+                    if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE ==
+                        key
+                    ) {
+                        currency[0] = value?.toString()
+                        true
+                    } else {
+                        false
+                    }
             }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
         var currencyValue = currency[0]
@@ -807,13 +903,17 @@ open class AppboyKit :
         }
     }
 
-    override fun willHandlePushMessage(intent: Intent): Boolean = if (!(settings[PUSH_ENABLED].toBoolean())) {
-        false
-    } else {
-        intent.isBrazePushMessage()
-    }
+    override fun willHandlePushMessage(intent: Intent): Boolean =
+        if (!(settings[PUSH_ENABLED].toBoolean())) {
+            false
+        } else {
+            intent.isBrazePushMessage()
+        }
 
-    override fun onPushMessageReceived(context: Context, pushIntent: Intent) {
+    override fun onPushMessageReceived(
+        context: Context,
+        pushIntent: Intent,
+    ) {
         if (settings[PUSH_ENABLED].toBoolean()) {
             BrazeFirebaseMessagingService.handleBrazeRemoteMessage(
                 context,
@@ -822,14 +922,18 @@ open class AppboyKit :
         }
     }
 
-    override fun onPushRegistration(instanceId: String, senderId: String): Boolean = if (settings[PUSH_ENABLED].toBoolean()) {
-        updatedInstanceId = instanceId
-        Braze.getInstance(context).registeredPushToken = instanceId
-        queueDataFlush()
-        true
-    } else {
-        false
-    }
+    override fun onPushRegistration(
+        instanceId: String,
+        senderId: String,
+    ): Boolean =
+        if (settings[PUSH_ENABLED].toBoolean()) {
+            updatedInstanceId = instanceId
+            Braze.getInstance(context).registeredPushToken = instanceId
+            queueDataFlush()
+            true
+        } else {
+            false
+        }
 
     protected open fun setAuthority(authority: String?) {
         Braze.setEndpointProvider { appboyEndpoint ->
@@ -840,19 +944,31 @@ open class AppboyKit :
         }
     }
 
-    override fun onIdentifyCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
+    override fun onIdentifyCompleted(
+        mParticleUser: MParticleUser,
+        filteredIdentityApiRequest: FilteredIdentityApiRequest?,
+    ) {
         updateUser(mParticleUser)
     }
 
-    override fun onLoginCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
+    override fun onLoginCompleted(
+        mParticleUser: MParticleUser,
+        filteredIdentityApiRequest: FilteredIdentityApiRequest?,
+    ) {
         updateUser(mParticleUser)
     }
 
-    override fun onLogoutCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
+    override fun onLogoutCompleted(
+        mParticleUser: MParticleUser,
+        filteredIdentityApiRequest: FilteredIdentityApiRequest?,
+    ) {
         updateUser(mParticleUser)
     }
 
-    override fun onModifyCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
+    override fun onModifyCompleted(
+        mParticleUser: MParticleUser,
+        filteredIdentityApiRequest: FilteredIdentityApiRequest?,
+    ) {
         updateUser(mParticleUser)
     }
 
@@ -863,7 +979,11 @@ open class AppboyKit :
         email?.let { setEmail(it) }
     }
 
-    fun getIdentity(isMpidIdentityType: Boolean, identityType: IdentityType?, mParticleUser: MParticleUser?): String? {
+    fun getIdentity(
+        isMpidIdentityType: Boolean,
+        identityType: IdentityType?,
+        mParticleUser: MParticleUser?,
+    ): String? {
         var identity: String? = null
         if (isMpidIdentityType && mParticleUser != null) {
             identity = mParticleUser.id.toString()
@@ -921,7 +1041,11 @@ open class AppboyKit :
         }
     }
 
-    fun addToProperties(properties: BrazeProperties, key: String, value: String) {
+    fun addToProperties(
+        properties: BrazeProperties,
+        key: String,
+        value: String,
+    ) {
         try {
             if ("true".equals(value, true) ||
                 "false".equals(
@@ -957,13 +1081,14 @@ open class AppboyKit :
         return null
     }
 
-    fun getCalendarMinusYears(years: Int): Calendar? = if (years >= 0) {
-        val calendar = Calendar.getInstance()
-        calendar[Calendar.YEAR] = calendar[Calendar.YEAR] - years
-        calendar
-    } else {
-        null
-    }
+    fun getCalendarMinusYears(years: Int): Calendar? =
+        if (years >= 0) {
+            val calendar = Calendar.getInstance()
+            calendar[Calendar.YEAR] = calendar[Calendar.YEAR] - years
+            calendar
+        } else {
+            null
+        }
 
     fun getProductListParameters(productList: List<Product>): JSONArray {
         val productArray = JSONArray()
@@ -1081,8 +1206,13 @@ open class AppboyKit :
         return impressionArray
     }
 
-    internal abstract class StringTypeParser(var enableTypeDetection: Boolean) {
-        fun parseValue(key: String, value: String): Any {
+    internal abstract class StringTypeParser(
+        var enableTypeDetection: Boolean,
+    ) {
+        fun parseValue(
+            key: String,
+            value: String,
+        ): Any {
             if (!enableTypeDetection) {
                 toString(key, value)
                 return value
@@ -1121,59 +1251,108 @@ open class AppboyKit :
             }
         }
 
-        abstract fun toInt(key: String, value: Int)
+        abstract fun toInt(
+            key: String,
+            value: Int,
+        )
 
-        abstract fun toLong(key: String, value: Long)
+        abstract fun toLong(
+            key: String,
+            value: Long,
+        )
 
-        abstract fun toDouble(key: String, value: Double)
+        abstract fun toDouble(
+            key: String,
+            value: Double,
+        )
 
-        abstract fun toBoolean(key: String, value: Boolean)
+        abstract fun toBoolean(
+            key: String,
+            value: Boolean,
+        )
 
-        abstract fun toString(key: String, value: String)
+        abstract fun toString(
+            key: String,
+            value: String,
+        )
     }
 
-    internal inner class BrazePropertiesSetter(private var properties: BrazeProperties, enableTypeDetection: Boolean) :
-        StringTypeParser(enableTypeDetection) {
-        override fun toInt(key: String, value: Int) {
+    internal inner class BrazePropertiesSetter(
+        private var properties: BrazeProperties,
+        enableTypeDetection: Boolean,
+    ) : StringTypeParser(enableTypeDetection) {
+        override fun toInt(
+            key: String,
+            value: Int,
+        ) {
             properties.addProperty(key, value)
         }
 
-        override fun toLong(key: String, value: Long) {
+        override fun toLong(
+            key: String,
+            value: Long,
+        ) {
             properties.addProperty(key, value)
         }
 
-        override fun toDouble(key: String, value: Double) {
+        override fun toDouble(
+            key: String,
+            value: Double,
+        ) {
             properties.addProperty(key, value)
         }
 
-        override fun toBoolean(key: String, value: Boolean) {
+        override fun toBoolean(
+            key: String,
+            value: Boolean,
+        ) {
             properties.addProperty(key, value)
         }
 
-        override fun toString(key: String, value: String) {
+        override fun toString(
+            key: String,
+            value: String,
+        ) {
             properties.addProperty(key, value)
         }
     }
 
-    internal inner class UserAttributeSetter(private var brazeUser: BrazeUser, enableTypeDetection: Boolean) :
-        StringTypeParser(enableTypeDetection) {
-        override fun toInt(key: String, value: Int) {
+    internal inner class UserAttributeSetter(
+        private var brazeUser: BrazeUser,
+        enableTypeDetection: Boolean,
+    ) : StringTypeParser(enableTypeDetection) {
+        override fun toInt(
+            key: String,
+            value: Int,
+        ) {
             brazeUser.setCustomUserAttribute(key, value)
         }
 
-        override fun toLong(key: String, value: Long) {
+        override fun toLong(
+            key: String,
+            value: Long,
+        ) {
             brazeUser.setCustomUserAttribute(key, value)
         }
 
-        override fun toDouble(key: String, value: Double) {
+        override fun toDouble(
+            key: String,
+            value: Double,
+        ) {
             brazeUser.setCustomUserAttribute(key, value)
         }
 
-        override fun toBoolean(key: String, value: Boolean) {
+        override fun toBoolean(
+            key: String,
+            value: Boolean,
+        ) {
             brazeUser.setCustomUserAttribute(key, value)
         }
 
-        override fun toString(key: String, value: String) {
+        override fun toString(
+            key: String,
+            value: String,
+        ) {
             brazeUser.setCustomUserAttribute(key, value)
         }
     }

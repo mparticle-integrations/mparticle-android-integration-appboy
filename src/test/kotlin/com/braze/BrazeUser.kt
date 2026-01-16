@@ -7,7 +7,11 @@ class BrazeUser {
     var dobMonth: Month? = null
     var dobDay = -1
 
-    fun setDateOfBirth(year: Int, month: Month?, day: Int): Boolean {
+    fun setDateOfBirth(
+        year: Int,
+        month: Month?,
+        day: Int,
+    ): Boolean {
         dobYear = year
         dobMonth = month
         dobDay = day
@@ -17,7 +21,10 @@ class BrazeUser {
     val customAttributeArray = HashMap<String, MutableList<String>>()
     val customUserAttributes = HashMap<String, Any>()
 
-    fun addToCustomAttributeArray(key: String, value: String): Boolean {
+    fun addToCustomAttributeArray(
+        key: String,
+        value: String,
+    ): Boolean {
         var customArray = customAttributeArray[key]
         if (customArray == null) {
             customArray = ArrayList()
@@ -27,31 +34,47 @@ class BrazeUser {
         return true
     }
 
-    fun removeFromCustomAttributeArray(key: String, value: String): Boolean = try {
-        if (customAttributeArray.containsKey(key)) {
-            customAttributeArray.remove(key)
+    fun removeFromCustomAttributeArray(
+        key: String,
+        value: String,
+    ): Boolean =
+        try {
+            if (customAttributeArray.containsKey(key)) {
+                customAttributeArray.remove(key)
+            }
+            true
+        } catch (npe: NullPointerException) {
+            false
         }
-        true
-    } catch (npe: NullPointerException) {
-        false
-    }
 
-    fun setCustomUserAttribute(key: String, value: String): Boolean {
+    fun setCustomUserAttribute(
+        key: String,
+        value: String,
+    ): Boolean {
         customUserAttributes[key] = value
         return true
     }
 
-    fun setCustomUserAttribute(key: String, value: Boolean): Boolean {
+    fun setCustomUserAttribute(
+        key: String,
+        value: Boolean,
+    ): Boolean {
         customUserAttributes[key] = value
         return true
     }
 
-    fun setCustomUserAttribute(key: String, value: Int): Boolean {
+    fun setCustomUserAttribute(
+        key: String,
+        value: Int,
+    ): Boolean {
         customUserAttributes[key] = value
         return true
     }
 
-    fun setCustomUserAttribute(key: String, value: Double): Boolean {
+    fun setCustomUserAttribute(
+        key: String,
+        value: Double,
+    ): Boolean {
         customUserAttributes[key] = value
         return true
     }

@@ -15,7 +15,11 @@ class MockCoreCallbacks : CoreCallbacks {
 
     override fun isEnabled(): Boolean = false
 
-    override fun setIntegrationAttributes(kitId: Int, integrationAttributes: Map<String, String>) {}
+    override fun setIntegrationAttributes(
+        kitId: Int,
+        integrationAttributes: Map<String, String>,
+    ) {}
+
     override fun getIntegrationAttributes(kitId: Int): Map<String, String>? = null
 
     override fun getCurrentActivity(): WeakReference<Activity>? = null
@@ -34,12 +38,33 @@ class MockCoreCallbacks : CoreCallbacks {
 
     override fun getLaunchAction(): String? = null
 
-    override fun getKitListener(): KitListener = object : KitListener {
-        override fun kitFound(kitId: Int) {}
-        override fun kitConfigReceived(kitId: Int, configuration: String?) {}
-        override fun kitExcluded(kitId: Int, reason: String?) {}
-        override fun kitStarted(kitId: Int) {}
-        override fun onKitApiCalled(kitId: Int, used: Boolean?, vararg objects: Any?) {}
-        override fun onKitApiCalled(methodName: String?, kitId: Int, used: Boolean?, vararg objects: Any?) {}
-    }
+    override fun getKitListener(): KitListener =
+        object : KitListener {
+            override fun kitFound(kitId: Int) {}
+
+            override fun kitConfigReceived(
+                kitId: Int,
+                configuration: String?,
+            ) {}
+
+            override fun kitExcluded(
+                kitId: Int,
+                reason: String?,
+            ) {}
+
+            override fun kitStarted(kitId: Int) {}
+
+            override fun onKitApiCalled(
+                kitId: Int,
+                used: Boolean?,
+                vararg objects: Any?,
+            ) {}
+
+            override fun onKitApiCalled(
+                methodName: String?,
+                kitId: Int,
+                used: Boolean?,
+                vararg objects: Any?,
+            ) {}
+        }
 }

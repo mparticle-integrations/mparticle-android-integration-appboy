@@ -48,28 +48,44 @@ class TypeDetectionTests {
         Assert.assertEquals("true", parser.parseValue("key", "true"))
     }
 
-    private inner class SomeParser internal constructor(enableTypeDetection: Boolean?) :
-        StringTypeParser(
+    private inner class SomeParser internal constructor(
+        enableTypeDetection: Boolean?,
+    ) : StringTypeParser(
             enableTypeDetection!!,
         ) {
-        override fun toString(key: String, value: String) {
-            /* do nothing */
+        override fun toString(
+            key: String,
+            value: String,
+        ) {
+            // do nothing
         }
 
-        override fun toInt(key: String, value: Int) {
-            /* do nothing */
+        override fun toInt(
+            key: String,
+            value: Int,
+        ) {
+            // do nothing
         }
 
-        override fun toLong(key: String, value: Long) {
-            /* do nothing */
+        override fun toLong(
+            key: String,
+            value: Long,
+        ) {
+            // do nothing
         }
 
-        override fun toDouble(key: String, value: Double) {
-            /* do nothing */
+        override fun toDouble(
+            key: String,
+            value: Double,
+        ) {
+            // do nothing
         }
 
-        override fun toBoolean(key: String, value: Boolean) {
-            /* do nothing */
+        override fun toBoolean(
+            key: String,
+            value: Boolean,
+        ) {
+            // do nothing
         }
     }
 }
