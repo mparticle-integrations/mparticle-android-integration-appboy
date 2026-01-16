@@ -61,11 +61,10 @@ class AppboyKitTests {
         MParticle.setInstance(Mockito.mock(MParticle::class.java))
         Mockito.`when`(MParticle.getInstance()!!.Identity()).thenReturn(
             Mockito.mock(
-                IdentityApi::class.java
-            )
+                IdentityApi::class.java,
+            ),
         )
         braze = Braze
-
     }
 
     @Test
@@ -124,7 +123,7 @@ class AppboyKitTests {
     @Test
     @Throws(Exception::class)
     fun testHostSettingNull() {
-        //test that the key is set when it is passed in by the settings map
+        // test that the key is set when it is passed in by the settings map
         val missingSettings = HashMap<String, String>()
         missingSettings[AppboyKit.APPBOY_KEY] = "key"
         val kit = MockAppboyKit()
@@ -160,7 +159,7 @@ class AppboyKitTests {
 
     @Test
     fun testOnModify() {
-        //make sure it doesn't crash if there is no email or customerId
+        // make sure it doesn't crash if there is no email or customerId
         var e: Exception? = null
         try {
             AppboyKit().onModifyCompleted(MockUser(HashMap()), null)
@@ -233,7 +232,7 @@ class AppboyKitTests {
         calendar?.get(Calendar.YEAR)
             ?.let { Assert.assertEquals((currentYear - 5).toLong(), it.toLong()) }
 
-        //invalid ages (negative, non numeric), don't get set
+        // invalid ages (negative, non numeric), don't get set
         Assert.assertNull(kit.getCalendarMinusYears("asdv"))
         Assert.assertNull(kit.getCalendarMinusYears(-1))
     }
@@ -244,16 +243,16 @@ class AppboyKitTests {
         settings[AppboyKit.APPBOY_KEY] = "key"
         settings[AppboyKit.HOST] = hostName
         settings["subscriptionGroupMapping"] = "" +
-                "[{\"jsmap\":null,\"map\":\"test1\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000000\"}," +
-                "{\"jsmap\":null,\"map\":\"test2\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000001\"}," +
-                "{\"jsmap\":null,\"map\":\"test3\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000002\"}]"
+            "[{\"jsmap\":null,\"map\":\"test1\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000000\"}," +
+            "{\"jsmap\":null,\"map\":\"test2\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000001\"}," +
+            "{\"jsmap\":null,\"map\":\"test3\",\"maptype\":\"UserAttributeClass.Name\",\"value\":\"00000000-0000-0000-0000-000000000002\"}]"
         val kit = MockAppboyKit()
         val currentUser = braze.currentUser
 
         kit.onKitCreate(settings, MockContextApplication())
-        kit.setUserAttribute("test1", "true");
-        kit.setUserAttribute("test2", "false");
-        kit.setUserAttribute("test3", "notABoolean");
+        kit.setUserAttribute("test1", "true")
+        kit.setUserAttribute("test2", "false")
+        kit.setUserAttribute("test3", "notABoolean")
         Assert.assertEquals(2, currentUser.getCustomUserAttribute().size.toLong())
     }
 
@@ -318,7 +317,7 @@ class AppboyKitTests {
         val possibleValues = arrayOf(
             "Other", "CustomerId", "Facebook",
             "Twitter", "Google", "Microsoft",
-            "Yahoo", "Email", "Alias"
+            "Yahoo", "Email", "Alias",
         )
         val mpid = "MPID"
         for (`val` in possibleValues) {
@@ -329,7 +328,7 @@ class AppboyKitTests {
             Assert.assertNotNull(kit.identityType)
             Assert.assertEquals(
                 `val`.lowercase(Locale.getDefault()),
-                kit.identityType?.name?.lowercase(Locale.getDefault())
+                kit.identityType?.name?.lowercase(Locale.getDefault()),
             )
             Assert.assertFalse(kit.isMpidIdentityType)
         }
@@ -479,52 +478,52 @@ class AppboyKitTests {
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_SHIPPING), 12.0)
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_LIST_SOURCE),
-            "the source"
+            "the source",
         )
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TAX), 100.0)
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 99.0)
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_ACTION_LIST),
-            "product list name"
+            "product list name",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE),
-            "coupon code"
+            "coupon code",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_TRANSACTION_ID),
-            "the id"
+            "the id",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
-            "the affiliation"
+            "the affiliation",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME),
-            "product name"
+            "product name",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_CATEGORY),
-            "testCategory"
+            "testCategory",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_BRAND),
-            "testBrand"
+            "testBrand",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_POSITION),
-            1
+            1,
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_VARIANT),
-            "testVariant"
+            "testVariant",
         )
 
-        //Custom Attributes
+        // Custom Attributes
         Assert.assertEquals(properties.remove("key1"), "value1")
         Assert.assertEquals(properties.remove("key #2"), "value #3")
 
-        //Product Custom Attributes
+        // Product Custom Attributes
         Assert.assertEquals(properties.remove("productKey1"), "value1")
         Assert.assertEquals(properties.remove("productKey2"), "value2")
 
@@ -575,23 +574,23 @@ class AppboyKitTests {
                 val productProperties = productBrazeProperties.properties
                 Assert.assertEquals(
                     productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT),
-                    22.5
+                    22.5,
                 )
                 Assert.assertEquals(
                     productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE),
-                    4.5
+                    4.5,
                 )
                 Assert.assertEquals(
                     productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY),
-                    5.0
+                    5.0,
                 )
                 Assert.assertEquals(
                     productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_ID),
-                    "sku1"
+                    "sku1",
                 )
                 Assert.assertEquals(
                     productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME),
-                    "product name"
+                    "product name",
                 )
                 Assert.assertEquals(emptyAttributes, productProperties)
             }
@@ -600,24 +599,24 @@ class AppboyKitTests {
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TAX), 100.0)
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE),
-            "coupon code"
+            "coupon code",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_AFFILIATION),
-            "the affiliation"
+            "the affiliation",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_LIST_SOURCE),
-            "the source"
+            "the source",
         )
         Assert.assertEquals(properties.remove(CommerceEventUtils.Constants.ATT_TOTAL), 99.0)
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_ACTION_PRODUCT_ACTION_LIST),
-            "product list name"
+            "product list name",
         )
         Assert.assertEquals(
             properties.remove(CommerceEventUtils.Constants.ATT_TRANSACTION_ID),
-            "the id"
+            "the id",
         )
 
         val brazeCustomAttributesDictionary = properties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
@@ -700,19 +699,19 @@ class AppboyKitTests {
                 val promotionProperties = promotionBrazeProperties.properties
                 Assert.assertEquals(
                     promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_ID),
-                    "my_promo_1"
+                    "my_promo_1",
                 )
                 Assert.assertEquals(
                     promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_NAME),
-                    "App-wide 50% off sale"
+                    "App-wide 50% off sale",
                 )
                 Assert.assertEquals(
                     promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_POSITION),
-                    "dashboard_bottom"
+                    "dashboard_bottom",
                 )
                 Assert.assertEquals(
                     promotionProperties.remove(CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE),
-                    "sale_banner_1"
+                    "sale_banner_1",
                 )
                 Assert.assertEquals(emptyAttributes, promotionProperties)
             }
@@ -805,7 +804,7 @@ class AppboyKitTests {
                 val impressionProperties = impressionBrazeProperties.properties
                 Assert.assertEquals(
                     impressionProperties.remove("Product Impression List"),
-                    "Suggested Products List"
+                    "Suggested Products List",
                 )
                 val productArray = impressionProperties.remove(AppboyKit.PRODUCT_KEY)
                 Assert.assertTrue(productArray is Array<*>)
@@ -816,23 +815,23 @@ class AppboyKitTests {
                         val productProperties = productBrazeProperties.properties
                         Assert.assertEquals(
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT),
-                            22.5
+                            22.5,
                         )
                         Assert.assertEquals(
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_NAME),
-                            "product name"
+                            "product name",
                         )
                         Assert.assertEquals(
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY),
-                            5.0
+                            5.0,
                         )
                         Assert.assertEquals(
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_ID),
-                            "sku1"
+                            "sku1",
                         )
                         Assert.assertEquals(
                             productProperties.remove(CommerceEventUtils.Constants.ATT_PRODUCT_PRICE),
-                            4.5
+                            4.5,
                         )
                         val brazeProductCustomAttributesDictionary =
                             productProperties.remove(AppboyKit.CUSTOM_ATTRIBUTES_KEY)
@@ -841,11 +840,11 @@ class AppboyKitTests {
                                 brazeProductCustomAttributesDictionary.properties
                             Assert.assertEquals(
                                 customProductAttributesDictionary.remove("key1"),
-                                "value1"
+                                "value1",
                             )
                             Assert.assertEquals(
                                 customProductAttributesDictionary.remove("key #2"),
-                                "value #3"
+                                "value #3",
                             )
                             Assert.assertEquals(emptyAttributes, customProductAttributesDictionary)
                         }
@@ -1009,7 +1008,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
-        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        // this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
         val eaaObject = JSONObject()
         eaaObject.put("eaa", mapValue)
@@ -1046,7 +1045,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
-        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        // this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
         val eaaObject = JSONObject()
         eaaObject.put("eaa", mapValue)
@@ -1078,7 +1077,7 @@ class AppboyKitTests {
 
         val jsonObject = JSONObject()
         val mapValue = JSONObject()
-        //this is hash for event attribute i.e combination of eventType + eventName + attribute key
+        // this is hash for event attribute i.e combination of eventType + eventName + attribute key
         mapValue.put("888169310", "testEvent")
         val eaaObject = JSONObject()
         eaaObject.put("eas", mapValue)
@@ -1114,7 +1113,7 @@ class AppboyKitTests {
 
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
             "parseToNestedMap",
-            String::class.java
+            String::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, jsonInput)
@@ -1128,7 +1127,7 @@ class AppboyKitTests {
 
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
             "parseToNestedMap",
-            String::class.java
+            String::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, jsonInput)
@@ -1145,13 +1144,14 @@ class AppboyKitTests {
                 "notifications" to mapOf(
                     "email" to false,
                     "push" to true,
-                    "lastUpdated" to 1633046400000L
-                )
-            )
+                    "lastUpdated" to 1633046400000L,
+                ),
+            ),
         )
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
-            "searchKeyInNestedMap", Map::class.java,
-            Any::class.java
+            "searchKeyInNestedMap",
+            Map::class.java,
+            Any::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, map, "")
@@ -1163,8 +1163,9 @@ class AppboyKitTests {
         val kit = MockAppboyKit()
         val emptyMap: Map<String, Int> = emptyMap()
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
-            "searchKeyInNestedMap", Map::class.java,
-            Any::class.java
+            "searchKeyInNestedMap",
+            Map::class.java,
+            Any::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, emptyMap, "1")
@@ -1177,7 +1178,7 @@ class AppboyKitTests {
         val emptyJson = ""
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
             "parseConsentMapping",
-            String::class.java
+            String::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, emptyJson)
@@ -1191,7 +1192,7 @@ class AppboyKitTests {
             "{'GDPR':{'marketing':'{:false,'timestamp':1711038269644:'Test consent','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}','performance':'{'consented':true,'timestamp':1711038269644,'document':'parental_consent_agreement_v2','location':'17 Cherry Tree Lan 3','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'},'CCPA':'{'consented':true,'timestamp':1711038269644,'document':'ccpa_consent_agreement_v3','location':'17 Cherry Tree Lane','hardware_id':'IDFA:a5d934n0-232f-4afc-2e9a-3832d95zc702'}'}"
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
             "parseConsentMapping",
-            String::class.java
+            String::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, jsonInput)
@@ -1203,7 +1204,7 @@ class AppboyKitTests {
         val kit = MockAppboyKit()
         val method: Method = AppboyKit::class.java.getDeclaredMethod(
             "parseConsentMapping",
-            String::class.java
+            String::class.java,
         )
         method.isAccessible = true
         val result = method.invoke(kit, null)
@@ -1219,7 +1220,6 @@ class AppboyKitTests {
 
         map["consentMappingSDK"] =
             "        [{\\\"jsmap\\\":null,\\\"map\\\":\\\"Performance\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_user_data\\\"},{\\\"jsmap\\\":null,\\\"map\\\":\\\"Marketing\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
-
 
         var kitConfiguration =
             MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
@@ -1237,7 +1237,6 @@ class AppboyKitTests {
 
         kit.onConsentStateUpdated(state, state, filteredMParticleUser)
         TestCase.assertEquals(false, currentUser.getCustomUserAttribute()["\$google_ad_personalization"])
-
     }
 
     @Test
@@ -1249,7 +1248,6 @@ class AppboyKitTests {
 
         map["consentMappingSDK"] =
             "        [{\\\"jsmap\\\":null,\\\"map\\\":\\\"Performance\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_user_data\\\"},{\\\"jsmap\\\":null,\\\"map\\\":\\\"Marketing\\\",\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
-
 
         var kitConfiguration =
             MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
@@ -1339,7 +1337,6 @@ class AppboyKitTests {
         kit.onConsentStateUpdated(state, state, filteredMParticleUser)
 
         TestCase.assertEquals(0, currentUser.getCustomUserAttribute().size)
-
     }
 
     @Test

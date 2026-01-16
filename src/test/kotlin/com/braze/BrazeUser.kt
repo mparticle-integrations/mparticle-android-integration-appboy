@@ -14,7 +14,7 @@ class BrazeUser {
         return true
     }
 
-    val customAttributeArray = HashMap <String, MutableList<String>>()
+    val customAttributeArray = HashMap<String, MutableList<String>>()
     val customUserAttributes = HashMap<String, Any>()
 
     fun addToCustomAttributeArray(key: String, value: String): Boolean {
@@ -27,15 +27,13 @@ class BrazeUser {
         return true
     }
 
-    fun removeFromCustomAttributeArray(key: String, value: String): Boolean {
-        return try {
-            if (customAttributeArray.containsKey(key)) {
-                customAttributeArray.remove(key)
-            }
-            true
-        } catch (npe: NullPointerException) {
-            false
+    fun removeFromCustomAttributeArray(key: String, value: String): Boolean = try {
+        if (customAttributeArray.containsKey(key)) {
+            customAttributeArray.remove(key)
         }
+        true
+    } catch (npe: NullPointerException) {
+        false
     }
 
     fun setCustomUserAttribute(key: String, value: String): Boolean {
@@ -68,11 +66,7 @@ class BrazeUser {
         return true
     }
 
-    fun getCustomAttribute(): HashMap<String, MutableList<String>> {
-        return customAttributeArray
-    }
+    fun getCustomAttribute(): HashMap<String, MutableList<String>> = customAttributeArray
 
-    fun getCustomUserAttribute(): HashMap<String, Any> {
-        return customUserAttributes
-    }
+    fun getCustomUserAttribute(): HashMap<String, Any> = customUserAttributes
 }

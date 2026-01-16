@@ -1,7 +1,15 @@
 package com.mparticle.kits.mocks
 
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.ContentResolver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.IntentSender
 import android.content.IntentSender.SendIntentException
+import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -24,7 +32,12 @@ import android.telephony.TelephonyManager
 import android.view.Display
 import junit.framework.Assert
 import org.mockito.Mockito
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
 
 class MockContext : Context() {
     private var sharedPreferences: SharedPreferences = MockSharedPreferences()
@@ -41,22 +54,16 @@ class MockContext : Context() {
         return application as MockApplication
     }
 
-    override fun checkCallingOrSelfPermission(permission: String): Int {
-        return PackageManager.PERMISSION_GRANTED
-    }
+    override fun checkCallingOrSelfPermission(permission: String): Int = PackageManager.PERMISSION_GRANTED
 
-    override fun getSharedPreferences(name: String, mode: Int): SharedPreferences {
-        return sharedPreferences
-    }
+    override fun getSharedPreferences(name: String, mode: Int): SharedPreferences = sharedPreferences
 
-    override fun getResources(): Resources? {
-        return resources
-    }
+    override fun getResources(): Resources? = resources
 
-    override fun getSystemService(name: String): Any? {
-        return if (name == TELEPHONY_SERVICE) {
-            Mockito.mock(TelephonyManager::class.java)
-        } else null
+    override fun getSystemService(name: String): Any? = if (name == TELEPHONY_SERVICE) {
+        Mockito.mock(TelephonyManager::class.java)
+    } else {
+        null
     }
 
     override fun getPackageManager(): PackageManager {
@@ -79,25 +86,17 @@ class MockContext : Context() {
         return manager
     }
 
-    override fun getPackageName(): String {
-        return "com.mparticle.test"
-    }
+    override fun getPackageName(): String = "com.mparticle.test"
 
-    override fun getApplicationInfo(): ApplicationInfo {
-        return ApplicationInfo()
-    }
+    override fun getApplicationInfo(): ApplicationInfo = ApplicationInfo()
 
     /**
      * Stubbed methods
      */
     override fun setTheme(resid: Int) {}
-    override fun getTheme(): Theme? {
-        return null
-    }
+    override fun getTheme(): Theme? = null
 
-    override fun getClassLoader(): ClassLoader? {
-        return null
-    }
+    override fun getClassLoader(): ClassLoader? = null
 
     override fun sendBroadcast(intent: Intent) {}
     override fun sendBroadcast(intent: Intent, receiverPermission: String?) {}
@@ -109,7 +108,7 @@ class MockContext : Context() {
         scheduler: Handler?,
         initialCode: Int,
         initialData: String?,
-        initialExtras: Bundle?
+        initialExtras: Bundle?,
     ) {
     }
 
@@ -117,7 +116,7 @@ class MockContext : Context() {
     override fun sendBroadcastAsUser(
         intent: Intent,
         user: UserHandle,
-        receiverPermission: String?
+        receiverPermission: String?,
     ) {
     }
 
@@ -129,7 +128,7 @@ class MockContext : Context() {
         scheduler: Handler?,
         initialCode: Int,
         initialData: String?,
-        initialExtras: Bundle?
+        initialExtras: Bundle?,
     ) {
     }
 
@@ -140,7 +139,7 @@ class MockContext : Context() {
         scheduler: Handler?,
         initialCode: Int,
         initialData: String?,
-        initialExtras: Bundle?
+        initialExtras: Bundle?,
     ) {
     }
 
@@ -153,71 +152,51 @@ class MockContext : Context() {
         scheduler: Handler?,
         initialCode: Int,
         initialData: String?,
-        initialExtras: Bundle?
+        initialExtras: Bundle?,
     ) {
     }
 
     override fun removeStickyBroadcastAsUser(intent: Intent, user: UserHandle) {}
-    override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter): Intent? {
-        return null
-    }
+    override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter): Intent? = null
 
     override fun registerReceiver(
         receiver: BroadcastReceiver?,
         filter: IntentFilter,
-        flags: Int
-    ): Intent? {
-        return null
-    }
-
-    override fun registerReceiver(
-        receiver: BroadcastReceiver,
-        filter: IntentFilter,
-        broadcastPermission: String?,
-        scheduler: Handler?
-    ): Intent? {
-        return null
-    }
+        flags: Int,
+    ): Intent? = null
 
     override fun registerReceiver(
         receiver: BroadcastReceiver,
         filter: IntentFilter,
         broadcastPermission: String?,
         scheduler: Handler?,
-        flags: Int
-    ): Intent? {
-        return null
-    }
+    ): Intent? = null
+
+    override fun registerReceiver(
+        receiver: BroadcastReceiver,
+        filter: IntentFilter,
+        broadcastPermission: String?,
+        scheduler: Handler?,
+        flags: Int,
+    ): Intent? = null
 
     override fun unregisterReceiver(receiver: BroadcastReceiver) {}
-    override fun startService(service: Intent): ComponentName? {
-        return null
-    }
+    override fun startService(service: Intent): ComponentName? = null
 
-    override fun startForegroundService(service: Intent): ComponentName? {
-        return null
-    }
+    override fun startForegroundService(service: Intent): ComponentName? = null
 
-    override fun stopService(service: Intent): Boolean {
-        return false
-    }
+    override fun stopService(service: Intent): Boolean = false
 
-    override fun bindService(service: Intent, conn: ServiceConnection, flags: Int): Boolean {
-        return false
-    }
+    override fun bindService(service: Intent, conn: ServiceConnection, flags: Int): Boolean = false
 
     override fun unbindService(conn: ServiceConnection) {}
     override fun startInstrumentation(
         className: ComponentName,
         profileFile: String?,
-        arguments: Bundle?
-    ): Boolean {
-        return false
-    }
+        arguments: Bundle?,
+    ): Boolean = false
 
-    override fun checkSelfPermission(permission: String): Int {
-        return 0
-    }
+    override fun checkSelfPermission(permission: String): Int = 0
 
     override fun enforcePermission(permission: String, pid: Int, uid: Int, message: String?) {}
     override fun enforceCallingPermission(permission: String, message: String?) {}
@@ -225,17 +204,11 @@ class MockContext : Context() {
     override fun grantUriPermission(toPackage: String, uri: Uri, modeFlags: Int) {}
     override fun revokeUriPermission(uri: Uri, modeFlags: Int) {}
     override fun revokeUriPermission(toPackage: String, uri: Uri, modeFlags: Int) {}
-    override fun checkUriPermission(uri: Uri, pid: Int, uid: Int, modeFlags: Int): Int {
-        return 0
-    }
+    override fun checkUriPermission(uri: Uri, pid: Int, uid: Int, modeFlags: Int): Int = 0
 
-    override fun checkCallingUriPermission(uri: Uri, modeFlags: Int): Int {
-        return 0
-    }
+    override fun checkCallingUriPermission(uri: Uri, modeFlags: Int): Int = 0
 
-    override fun checkCallingOrSelfUriPermission(uri: Uri, modeFlags: Int): Int {
-        return 0
-    }
+    override fun checkCallingOrSelfUriPermission(uri: Uri, modeFlags: Int): Int = 0
 
     override fun checkUriPermission(
         uri: Uri?,
@@ -243,17 +216,15 @@ class MockContext : Context() {
         writePermission: String?,
         pid: Int,
         uid: Int,
-        modeFlags: Int
-    ): Int {
-        return 0
-    }
+        modeFlags: Int,
+    ): Int = 0
 
     override fun enforceUriPermission(
         uri: Uri,
         pid: Int,
         uid: Int,
         modeFlags: Int,
-        message: String
+        message: String,
     ) {
     }
 
@@ -266,166 +237,94 @@ class MockContext : Context() {
         pid: Int,
         uid: Int,
         modeFlags: Int,
-        message: String?
+        message: String?,
     ) {
     }
 
     @Throws(NameNotFoundException::class)
-    override fun createPackageContext(packageName: String, flags: Int): Context? {
-        return null
-    }
+    override fun createPackageContext(packageName: String, flags: Int): Context? = null
 
     @Throws(NameNotFoundException::class)
-    override fun createContextForSplit(splitName: String): Context? {
-        return null
-    }
+    override fun createContextForSplit(splitName: String): Context? = null
 
-    override fun createConfigurationContext(overrideConfiguration: Configuration): Context? {
-        return null
-    }
+    override fun createConfigurationContext(overrideConfiguration: Configuration): Context? = null
 
-    override fun createDisplayContext(display: Display): Context? {
-        return null
-    }
+    override fun createDisplayContext(display: Display): Context? = null
 
-    override fun createDeviceProtectedStorageContext(): Context? {
-        return null
-    }
+    override fun createDeviceProtectedStorageContext(): Context? = null
 
-    override fun isDeviceProtectedStorage(): Boolean {
-        return false
-    }
+    override fun isDeviceProtectedStorage(): Boolean = false
 
-    override fun moveSharedPreferencesFrom(sourceContext: Context, name: String): Boolean {
-        return false
-    }
+    override fun moveSharedPreferencesFrom(sourceContext: Context, name: String): Boolean = false
 
-    override fun deleteSharedPreferences(name: String): Boolean {
-        return false
-    }
+    override fun deleteSharedPreferences(name: String): Boolean = false
 
     @Throws(FileNotFoundException::class)
-    override fun openFileInput(name: String): FileInputStream? {
-        return null
-    }
+    override fun openFileInput(name: String): FileInputStream? = null
 
     @Throws(FileNotFoundException::class)
-    override fun openFileOutput(name: String, mode: Int): FileOutputStream? {
-        return null
-    }
+    override fun openFileOutput(name: String, mode: Int): FileOutputStream? = null
 
-    override fun deleteFile(name: String): Boolean {
-        return false
-    }
+    override fun deleteFile(name: String): Boolean = false
 
-    override fun getFileStreamPath(name: String): File? {
-        return null
-    }
+    override fun getFileStreamPath(name: String): File? = null
 
-    override fun getDataDir(): File? {
-        return null
-    }
+    override fun getDataDir(): File? = null
 
-    override fun getFilesDir(): File? {
-        return null
-    }
+    override fun getFilesDir(): File? = null
 
-    override fun getNoBackupFilesDir(): File? {
-        return null
-    }
+    override fun getNoBackupFilesDir(): File? = null
 
-    override fun getExternalFilesDir(type: String?): File? {
-        return null
-    }
+    override fun getExternalFilesDir(type: String?): File? = null
 
-    override fun getExternalFilesDirs(type: String): Array<File?> {
-        return arrayOfNulls(0)
-    }
+    override fun getExternalFilesDirs(type: String): Array<File?> = arrayOfNulls(0)
 
-    override fun getObbDir(): File? {
-        return null
-    }
+    override fun getObbDir(): File? = null
 
-    override fun getObbDirs(): Array<File?> {
-        return arrayOfNulls(0)
-    }
+    override fun getObbDirs(): Array<File?> = arrayOfNulls(0)
 
-    override fun getCacheDir(): File? {
-        return null
-    }
+    override fun getCacheDir(): File? = null
 
-    override fun getCodeCacheDir(): File? {
-        return null
-    }
+    override fun getCodeCacheDir(): File? = null
 
-    override fun getExternalCacheDir(): File? {
-        return null
-    }
+    override fun getExternalCacheDir(): File? = null
 
-    override fun getExternalCacheDirs(): Array<File?> {
-        return arrayOfNulls(0)
-    }
+    override fun getExternalCacheDirs(): Array<File?> = arrayOfNulls(0)
 
-    override fun getExternalMediaDirs(): Array<File?> {
-        return arrayOfNulls(0)
-    }
+    override fun getExternalMediaDirs(): Array<File?> = arrayOfNulls(0)
 
-    override fun fileList(): Array<String?> {
-        return arrayOfNulls(0)
-    }
+    override fun fileList(): Array<String?> = arrayOfNulls(0)
 
-    override fun getDir(name: String, mode: Int): File? {
-        return null
-    }
-
-    override fun openOrCreateDatabase(
-        name: String,
-        mode: Int,
-        factory: CursorFactory
-    ): SQLiteDatabase? {
-        return null
-    }
+    override fun getDir(name: String, mode: Int): File? = null
 
     override fun openOrCreateDatabase(
         name: String,
         mode: Int,
         factory: CursorFactory,
-        errorHandler: DatabaseErrorHandler?
-    ): SQLiteDatabase? {
-        return null
-    }
+    ): SQLiteDatabase? = null
 
-    override fun moveDatabaseFrom(sourceContext: Context, name: String): Boolean {
-        return false
-    }
+    override fun openOrCreateDatabase(
+        name: String,
+        mode: Int,
+        factory: CursorFactory,
+        errorHandler: DatabaseErrorHandler?,
+    ): SQLiteDatabase? = null
 
-    override fun deleteDatabase(name: String): Boolean {
-        return false
-    }
+    override fun moveDatabaseFrom(sourceContext: Context, name: String): Boolean = false
 
-    override fun getDatabasePath(name: String): File? {
-        return null
-    }
+    override fun deleteDatabase(name: String): Boolean = false
 
-    override fun databaseList(): Array<String?> {
-        return arrayOfNulls(0)
-    }
+    override fun getDatabasePath(name: String): File? = null
 
-    override fun getWallpaper(): Drawable? {
-        return null
-    }
+    override fun databaseList(): Array<String?> = arrayOfNulls(0)
 
-    override fun peekWallpaper(): Drawable? {
-        return null
-    }
+    override fun getWallpaper(): Drawable? = null
 
-    override fun getWallpaperDesiredMinimumWidth(): Int {
-        return 0
-    }
+    override fun peekWallpaper(): Drawable? = null
 
-    override fun getWallpaperDesiredMinimumHeight(): Int {
-        return 0
-    }
+    override fun getWallpaperDesiredMinimumWidth(): Int = 0
+
+    override fun getWallpaperDesiredMinimumHeight(): Int = 0
 
     @Throws(IOException::class)
     override fun setWallpaper(bitmap: Bitmap) {
@@ -443,13 +342,14 @@ class MockContext : Context() {
     override fun startActivity(intent: Intent, options: Bundle?) {}
     override fun startActivities(intents: Array<Intent>) {}
     override fun startActivities(intents: Array<Intent>, options: Bundle) {}
+
     @Throws(SendIntentException::class)
     override fun startIntentSender(
         intent: IntentSender,
         fillInIntent: Intent?,
         flagsMask: Int,
         flagsValues: Int,
-        extraFlags: Int
+        extraFlags: Int,
     ) {
     }
 
@@ -460,39 +360,23 @@ class MockContext : Context() {
         flagsMask: Int,
         flagsValues: Int,
         extraFlags: Int,
-        options: Bundle?
+        options: Bundle?,
     ) {
     }
 
-    override fun getSystemServiceName(serviceClass: Class<*>): String? {
-        return null
-    }
+    override fun getSystemServiceName(serviceClass: Class<*>): String? = null
 
-    override fun checkPermission(permission: String, pid: Int, uid: Int): Int {
-        return 0
-    }
+    override fun checkPermission(permission: String, pid: Int, uid: Int): Int = 0
 
-    override fun checkCallingPermission(permission: String): Int {
-        return 0
-    }
+    override fun checkCallingPermission(permission: String): Int = 0
 
-    override fun getContentResolver(): ContentResolver? {
-        return null
-    }
+    override fun getContentResolver(): ContentResolver? = null
 
-    override fun getMainLooper(): Looper? {
-        return null
-    }
+    override fun getMainLooper(): Looper? = null
 
-    override fun getPackageResourcePath(): String? {
-        return null
-    }
+    override fun getPackageResourcePath(): String? = null
 
-    override fun getPackageCodePath(): String? {
-        return null
-    }
+    override fun getPackageCodePath(): String? = null
 
-    override fun getAssets(): AssetManager? {
-        return null
-    }
+    override fun getAssets(): AssetManager? = null
 }

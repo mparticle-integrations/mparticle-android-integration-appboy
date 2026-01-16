@@ -8,5 +8,5 @@ data class BrazePurchase(
     val currency: String,
     val unitPrice: BigDecimal,
     val quantity: Int,
-    val purchaseProperties: BrazeProperties
+    val purchaseProperties: BrazeProperties,
 )

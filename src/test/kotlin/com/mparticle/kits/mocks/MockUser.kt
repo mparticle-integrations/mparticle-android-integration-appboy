@@ -4,8 +4,8 @@ import com.mparticle.MParticle.IdentityType
 import com.mparticle.UserAttributeListenerType
 import com.mparticle.audience.AudienceResponse
 import com.mparticle.audience.AudienceTask
-import com.mparticle.identity.MParticleUser
 import com.mparticle.consent.ConsentState
+import com.mparticle.identity.MParticleUser
 
 class MockUser(var identities: Map<IdentityType, String>) : MParticleUser {
 
@@ -33,15 +33,11 @@ class MockUser(var identities: Map<IdentityType, String>) : MParticleUser {
 
     override fun setConsentState(consentState: ConsentState?) {}
 
-    override fun isLoggedIn(): Boolean =false
+    override fun isLoggedIn(): Boolean = false
 
     override fun getFirstSeenTime(): Long = 0
 
     override fun getLastSeenTime(): Long = 0
 
-    override fun getUserAudiences(): AudienceTask<AudienceResponse> {
-        throw NotImplementedError("getUserAudiences() is not implemented")
-    }
-
-
+    override fun getUserAudiences(): AudienceTask<AudienceResponse> = throw NotImplementedError("getUserAudiences() is not implemented")
 }

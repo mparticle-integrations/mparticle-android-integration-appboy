@@ -12,14 +12,16 @@ class MockAppboyKit : AppboyKit() {
     }
 
     override fun queueDataFlush() {
-        //do nothing
+        // do nothing
     }
 
     init {
         kitManager = MockKitManagerImpl(
-            Mockito.mock(Context::class.java), Mockito.mock(
-                ReportingManager::class.java
-            ), MockCoreCallbacks()
+            Mockito.mock(Context::class.java),
+            Mockito.mock(
+                ReportingManager::class.java,
+            ),
+            MockCoreCallbacks(),
         )
     }
 }

@@ -15,11 +15,11 @@ class TypeDetectionTests {
         Assert.assertEquals(Int.MIN_VALUE, parser.parseValue("key", Int.MIN_VALUE.toString()))
         Assert.assertEquals(
             Int.MAX_VALUE + 1L,
-            parser.parseValue("key", (Int.MAX_VALUE + 1L).toString())
+            parser.parseValue("key", (Int.MAX_VALUE + 1L).toString()),
         )
         Assert.assertEquals(
             Int.MIN_VALUE - 1L,
-            parser.parseValue("key", (Int.MIN_VALUE - 1L).toString())
+            parser.parseValue("key", (Int.MIN_VALUE - 1L).toString()),
         )
         Assert.assertEquals(Long.MAX_VALUE, parser.parseValue("key", Long.MAX_VALUE.toString()))
         Assert.assertEquals(Long.MIN_VALUE, parser.parseValue("key", Long.MIN_VALUE.toString()))
@@ -42,7 +42,7 @@ class TypeDetectionTests {
         Assert.assertEquals("1", parser.parseValue("key", "1"))
         Assert.assertEquals(
             (Int.MAX_VALUE + 1L).toString(),
-            parser.parseValue("key", (Int.MAX_VALUE + 1L).toString())
+            parser.parseValue("key", (Int.MAX_VALUE + 1L).toString()),
         )
         Assert.assertEquals("432.2561", parser.parseValue("key", "432.2561"))
         Assert.assertEquals("true", parser.parseValue("key", "true"))
@@ -50,21 +50,26 @@ class TypeDetectionTests {
 
     private inner class SomeParser internal constructor(enableTypeDetection: Boolean?) :
         StringTypeParser(
-            enableTypeDetection!!
+            enableTypeDetection!!,
         ) {
-        override fun toString(key: String, value: String) { /* do nothing */
+        override fun toString(key: String, value: String) {
+            /* do nothing */
         }
 
-        override fun toInt(key: String, value: Int) { /* do nothing */
+        override fun toInt(key: String, value: Int) {
+            /* do nothing */
         }
 
-        override fun toLong(key: String, value: Long) { /* do nothing */
+        override fun toLong(key: String, value: Long) {
+            /* do nothing */
         }
 
-        override fun toDouble(key: String, value: Double) { /* do nothing */
+        override fun toDouble(key: String, value: Double) {
+            /* do nothing */
         }
 
-        override fun toBoolean(key: String, value: Boolean) { /* do nothing */
+        override fun toBoolean(key: String, value: Boolean) {
+            /* do nothing */
         }
     }
 }

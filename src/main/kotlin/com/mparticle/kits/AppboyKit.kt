@@ -5,12 +5,15 @@ import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
-import android.util.Log
 import com.braze.Braze
 import com.braze.BrazeActivityLifecycleCallbackListener
 import com.braze.BrazeUser
 import com.braze.configuration.BrazeConfig
-import com.braze.enums.*
+import com.braze.enums.BrazeSdkMetadata
+import com.braze.enums.Gender
+import com.braze.enums.Month
+import com.braze.enums.NotificationSubscriptionType
+import com.braze.enums.SdkFlavor
 import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
 import com.braze.push.BrazeFirebaseMessagingService
@@ -28,7 +31,12 @@ import com.mparticle.consent.ConsentState
 import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.Logger
 import com.mparticle.kits.CommerceEventUtils.OnAttributeExtracted
-import com.mparticle.kits.KitIntegration.*
+import com.mparticle.kits.KitIntegration.AttributeListener
+import com.mparticle.kits.KitIntegration.CommerceListener
+import com.mparticle.kits.KitIntegration.EventListener
+import com.mparticle.kits.KitIntegration.IdentityListener
+import com.mparticle.kits.KitIntegration.PushListener
+import com.mparticle.kits.KitIntegration.UserAttributeListener
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -40,8 +48,14 @@ import kotlin.collections.HashMap
 /**
  * mParticle client-side Appboy integration
  */
-open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
-    KitIntegration.EventListener, PushListener, IdentityListener, KitIntegration.UserAttributeListener {
+open class AppboyKit :
+    KitIntegration(),
+    AttributeListener,
+    CommerceListener,
+    KitIntegration.EventListener,
+    PushListener,
+    IdentityListener,
+    KitIntegration.UserAttributeListener {
 
     var enableTypeDetection = false
     var bundleCommerceEvents = false
@@ -53,18 +67,13 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     private var forwardScreenViews = false
     private lateinit var updatedInstanceId: String
 
-
     override fun getName() = NAME
 
-
-    public override fun onKitCreate(
-        settings: Map<String, String?>,
-        context: Context
-    ): List<ReportingMessage>? {
+    public override fun onKitCreate(settings: Map<String, String?>, context: Context): List<ReportingMessage>? {
         val key = settings[APPBOY_KEY]
         require(!KitUtils.isEmpty(key)) { "Braze key is empty." }
 
-        //try to get endpoint from the host setting
+        // try to get endpoint from the host setting
         val authority = settings[HOST]
         if (!KitUtils.isEmpty(authority)) {
             setAuthority(authority)
@@ -104,7 +113,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         queueDataFlush()
         if (setDefaultAppboyLifecycleCallbackListener) {
             (context.applicationContext as Application).registerActivityLifecycleCallbacks(
-                BrazeActivityLifecycleCallbackListener() as ActivityLifecycleCallbacks
+                BrazeActivityLifecycleCallbackListener() as ActivityLifecycleCallbacks,
             )
         }
         setIdentityType(settings)
@@ -135,16 +144,9 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     override fun leaveBreadcrumb(breadcrumb: String): List<ReportingMessage> = emptyList()
 
-    override fun logError(
-        message: String,
-        errorAttributes: Map<String, String>
-    ): List<ReportingMessage> = emptyList()
+    override fun logError(message: String, errorAttributes: Map<String, String>): List<ReportingMessage> = emptyList()
 
-    override fun logException(
-        exception: Exception,
-        exceptionAttributes: Map<String, String>,
-        message: String
-    ): List<ReportingMessage> = emptyList()
+    override fun logException(exception: Exception, exceptionAttributes: Map<String, String>, message: String): List<ReportingMessage> = emptyList()
 
     override fun logEvent(event: MPEvent): List<ReportingMessage> {
         val newAttributes: MutableMap<String, Any?> = HashMap()
@@ -189,42 +191,37 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         return listOf(ReportingMessage.fromEvent(this, event).setAttributes(newAttributes))
     }
 
-    override fun logScreen(
-        screenName: String,
-        screenAttributes: Map<String, String>?
-    ): List<ReportingMessage> {
-        return if (forwardScreenViews) {
-            if (screenAttributes == null) {
-                Braze.getInstance(context).logCustomEvent(screenName)
-            } else {
-                val properties = BrazeProperties()
-                val propertyParser = BrazePropertiesSetter(properties, enableTypeDetection)
-                for ((key, value) in screenAttributes) {
-                    propertyParser.parseValue(key, value)
-                }
-                Braze.getInstance(context).logCustomEvent(screenName, properties)
-            }
-            queueDataFlush()
-            val messages: MutableList<ReportingMessage> = LinkedList()
-            messages.add(
-                ReportingMessage(
-                    this,
-                    ReportingMessage.MessageType.SCREEN_VIEW,
-                    System.currentTimeMillis(),
-                    screenAttributes
-                )
-            )
-            messages
+    override fun logScreen(screenName: String, screenAttributes: Map<String, String>?): List<ReportingMessage> = if (forwardScreenViews) {
+        if (screenAttributes == null) {
+            Braze.getInstance(context).logCustomEvent(screenName)
         } else {
-            emptyList()
+            val properties = BrazeProperties()
+            val propertyParser = BrazePropertiesSetter(properties, enableTypeDetection)
+            for ((key, value) in screenAttributes) {
+                propertyParser.parseValue(key, value)
+            }
+            Braze.getInstance(context).logCustomEvent(screenName, properties)
         }
+        queueDataFlush()
+        val messages: MutableList<ReportingMessage> = LinkedList()
+        messages.add(
+            ReportingMessage(
+                this,
+                ReportingMessage.MessageType.SCREEN_VIEW,
+                System.currentTimeMillis(),
+                screenAttributes,
+            ),
+        )
+        messages
+    } else {
+        emptyList()
     }
 
     override fun logLtvIncrease(
         valueIncreased: BigDecimal,
         valueTotal: BigDecimal,
         eventName: String,
-        contextInfo: Map<String, String>
+        contextInfo: Map<String, String>,
     ): List<ReportingMessage> = emptyList()
 
     override fun logEvent(event: CommerceEvent): List<ReportingMessage> {
@@ -232,8 +229,9 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         if (!KitUtils.isEmpty(event.productAction) &&
             event.productAction.equals(
                 Product.PURCHASE,
-                true
-            ) && !event.products.isNullOrEmpty()
+                true,
+            ) &&
+            !event.products.isNullOrEmpty()
         ) {
             if (bundleCommerceEvents) {
                 logOrderLevelTransaction(event)
@@ -318,8 +316,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     }
                     DOB -> useDobString(attributeValue, value)
                     UserAttributes.GENDER -> {
-                        if (attributeValue.contains("fe")) value.setGender(Gender.FEMALE)
-                        else value.setGender(Gender.MALE)
+                        if (attributeValue.contains("fe")) {
+                            value.setGender(Gender.FEMALE)
+                        } else {
+                            value.setGender(Gender.MALE)
+                        }
                     }
                     else -> {
                         if (subscriptionGroupIds?.containsKey(key) == true) {
@@ -335,7 +336,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
                                 else -> {
                                     Logger.warning(
-                                        "Unable to set Subscription Group ID for user attribute: $key due to invalid value data type. Expected Boolean."
+                                        "Unable to set Subscription Group ID for user attribute: $key due to invalid value data type. Expected Boolean.",
                                     )
                                 }
                             }
@@ -364,7 +365,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             calendar.time = dateFormat.parse(value) as Date
             val year = calendar[Calendar.YEAR]
             val monthNum = calendar[Calendar.MONTH]
-            val month = Month.values()[monthNum]//
+            val month = Month.values()[monthNum] //
             val day = calendar[Calendar.DAY_OF_MONTH]
             user.setDateOfBirth(year, month, day)
         } catch (e: Exception) {
@@ -386,12 +387,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         })
     }
 
-    override fun onIncrementUserAttribute(
-        key: String?,
-        incrementedBy: Number?,
-        value: String?,
-        user: FilteredMParticleUser?
-    ) {
+    override fun onIncrementUserAttribute(key: String?, incrementedBy: Number?, value: String?, user: FilteredMParticleUser?) {
     }
 
     override fun onRemoveUserAttribute(key: String?, user: FilteredMParticleUser?) {
@@ -403,33 +399,25 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     override fun onSetUserTag(key: String?, user: FilteredMParticleUser?) {
     }
 
-    override fun onSetUserAttributeList(
-        attributeKey: String?,
-        attributeValueList: MutableList<String>?,
-        user: FilteredMParticleUser?
-    ) {
+    override fun onSetUserAttributeList(attributeKey: String?, attributeValueList: MutableList<String>?, user: FilteredMParticleUser?) {
     }
 
     override fun onSetAllUserAttributes(
         userAttributes: MutableMap<String, String>?,
         userAttributeLists: MutableMap<String, MutableList<String>>?,
-        user: FilteredMParticleUser?
+        user: FilteredMParticleUser?,
     ) {
     }
 
     override fun supportsAttributeLists(): Boolean = true
-    override fun onConsentStateUpdated(
-        oldState: ConsentState,
-        newState: ConsentState,
-        user: FilteredMParticleUser
-    ) {
+    override fun onConsentStateUpdated(oldState: ConsentState, newState: ConsentState, user: FilteredMParticleUser) {
         setConsent(newState)
     }
 
     private fun setConsent(consentState: ConsentState) {
         val clientConsentSettings = parseToNestedMap(consentState.toString())
 
-        parseConsentMapping(settings[consentMappingSDK]).iterator().forEach { currentConsent ->
+        parseConsentMapping(settings[CONSENT_MAPPING_SDK]).iterator().forEach { currentConsent ->
             val isConsentAvailable =
                 searchKeyInNestedMap(clientConsentSettings, key = currentConsent.key)
 
@@ -439,13 +427,14 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
                 when (currentConsent.value) {
                     "google_ad_user_data" -> setConsentValueToBraze(
-                        KEY_GOOGLE_AD_USER_DATA, isConsentGranted
+                        KEY_GOOGLE_AD_USER_DATA,
+                        isConsentGranted,
                     )
 
                     "google_ad_personalization" -> setConsentValueToBraze(
-                        KEY_GOOGLE_AD_PERSONALIZATION, isConsentGranted
+                        KEY_GOOGLE_AD_PERSONALIZATION,
+                        isConsentGranted,
                     )
-
                 }
             }
         }
@@ -481,7 +470,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                         }
                 }
         } catch (jse: JSONException) {
-            Logger.warning(jse, "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+            Logger.warning(
+                jse,
+                "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.",
+            )
             emptyMap()
         }
     }
@@ -522,7 +514,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
         } catch (e: Exception) {
-            Logger.error(e, "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.")
+            Logger.error(
+                e,
+                "The Braze kit threw an exception while searching for the configured consent purpose mapping in the current user's consent status.",
+            )
         }
         return null
     }
@@ -535,10 +530,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
     /**
      * This is called when the Kit is added to the mParticle SDK, typically on app-startup.
      */
-    override fun setAllUserAttributes(
-        attributes: Map<String, String>,
-        attributeLists: Map<String, List<String>>
-    ) {
+    override fun setAllUserAttributes(attributes: Map<String, String>, attributeLists: Map<String, List<String>>) {
         if (!kitPreferences.getBoolean(PREF_KEY_HAS_SYNCED_ATTRIBUTES, false)) {
             for ((key, value) in attributes) {
                 setUserAttribute(key, value)
@@ -560,7 +552,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                     value.setCountry(null)
                 } else if (UserAttributes.FIRSTNAME == key) {
                     value.setFirstName(null)
-                } //else if (UserAttributes.GENDER == key) {   //Braze SDK wont allow for gender parameter to be null.
+                } // else if (UserAttributes.GENDER == key) {   //Braze SDK wont allow for gender parameter to be null.
                 // user.setGender(null)}
                 else if (UserAttributes.LASTNAME == key) {
                     value.setLastName(null)
@@ -615,13 +607,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
 
-            private fun checkCurrency(key: String, value: Any?): Boolean {
-                return if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
-                    currency[0] = value?.toString()
-                    true
-                } else {
-                    false
-                }
+            private fun checkCurrency(key: String, value: Any?): Boolean = if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
+                currency[0] = value?.toString()
+                true
+            } else {
+                false
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
@@ -639,7 +629,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         product.couponCode?.let {
             purchaseProperties.addProperty(
                 CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE,
-                it
+                it,
             )
         }
         product.brand?.let {
@@ -670,7 +660,6 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
         } catch (e: Exception) {
             Logger.error(e, "The Braze kit threw an exception while searching for forward sku as product name flag.")
-
         }
 
         Braze.Companion.getInstance(context).logPurchase(
@@ -678,7 +667,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             currencyValue,
             BigDecimal(product.unitPrice),
             product.quantity.toInt(),
-            purchaseProperties
+            purchaseProperties,
         )
     }
 
@@ -712,13 +701,11 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 }
             }
 
-            private fun checkCurrency(key: String, value: Any?): Boolean {
-                return if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
-                    currency[0] = value?.toString()
-                    true
-                } else {
-                    false
-                }
+            private fun checkCurrency(key: String, value: Any?): Boolean = if (CommerceEventUtils.Constants.ATT_ACTION_CURRENCY_CODE == key) {
+                currency[0] = value?.toString()
+                true
+            } else {
+                false
             }
         }
         CommerceEventUtils.extractActionAttributes(event, onAttributeExtracted)
@@ -758,7 +745,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 currencyValue,
                 event?.transactionAttributes?.revenue?.let { BigDecimal(it) } ?: BigDecimal(0),
                 1,
-                properties
+                properties,
             )
         } else {
             if (!KitUtils.isEmpty(event?.productAction)) {
@@ -774,30 +761,28 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
     }
 
-    override fun willHandlePushMessage(intent: Intent): Boolean {
-        return if (!(settings[PUSH_ENABLED].toBoolean())) {
-            false
-        } else intent.isBrazePushMessage()
+    override fun willHandlePushMessage(intent: Intent): Boolean = if (!(settings[PUSH_ENABLED].toBoolean())) {
+        false
+    } else {
+        intent.isBrazePushMessage()
     }
 
     override fun onPushMessageReceived(context: Context, pushIntent: Intent) {
         if (settings[PUSH_ENABLED].toBoolean()) {
             BrazeFirebaseMessagingService.handleBrazeRemoteMessage(
                 context,
-                RemoteMessage(pushIntent.extras)
+                RemoteMessage(pushIntent.extras),
             )
         }
     }
 
-    override fun onPushRegistration(instanceId: String, senderId: String): Boolean {
-        return if (settings[PUSH_ENABLED].toBoolean()) {
-            updatedInstanceId = instanceId
-            Braze.getInstance(context).registeredPushToken = instanceId
-            queueDataFlush()
-            true
-        } else {
-            false
-        }
+    override fun onPushRegistration(instanceId: String, senderId: String): Boolean = if (settings[PUSH_ENABLED].toBoolean()) {
+        updatedInstanceId = instanceId
+        Braze.getInstance(context).registeredPushToken = instanceId
+        queueDataFlush()
+        true
+    } else {
+        false
     }
 
     protected open fun setAuthority(authority: String?) {
@@ -807,31 +792,19 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
     }
 
-    override fun onIdentifyCompleted(
-        mParticleUser: MParticleUser,
-        filteredIdentityApiRequest: FilteredIdentityApiRequest?
-    ) {
+    override fun onIdentifyCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
         updateUser(mParticleUser)
     }
 
-    override fun onLoginCompleted(
-        mParticleUser: MParticleUser,
-        filteredIdentityApiRequest: FilteredIdentityApiRequest?
-    ) {
+    override fun onLoginCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
         updateUser(mParticleUser)
     }
 
-    override fun onLogoutCompleted(
-        mParticleUser: MParticleUser,
-        filteredIdentityApiRequest: FilteredIdentityApiRequest?
-    ) {
+    override fun onLogoutCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
         updateUser(mParticleUser)
     }
 
-    override fun onModifyCompleted(
-        mParticleUser: MParticleUser,
-        filteredIdentityApiRequest: FilteredIdentityApiRequest?
-    ) {
+    override fun onModifyCompleted(mParticleUser: MParticleUser, filteredIdentityApiRequest: FilteredIdentityApiRequest?) {
         updateUser(mParticleUser)
     }
 
@@ -842,15 +815,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         email?.let { setEmail(it) }
     }
 
-    fun getIdentity(
-        isMpidIdentityType: Boolean,
-        identityType: IdentityType?,
-        mParticleUser: MParticleUser?
-    ): String? {
+    fun getIdentity(isMpidIdentityType: Boolean, identityType: IdentityType?, mParticleUser: MParticleUser?): String? {
         var identity: String? = null
         if (isMpidIdentityType && mParticleUser != null) {
             identity = mParticleUser.id.toString()
-
         } else if (identityType != null && mParticleUser != null) {
             identity = mParticleUser.userIdentities[identityType]
         }
@@ -896,9 +864,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
 
     fun addToProperties(properties: BrazeProperties, key: String, value: String) {
         try {
-            if ("true".equals(value, true) || "false".equals(
+            if ("true".equals(value, true) ||
+                "false".equals(
                     value,
-                    true
+                    true,
                 )
             ) {
                 properties.addProperty(key, (value).toBoolean())
@@ -929,14 +898,12 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         return null
     }
 
-    fun getCalendarMinusYears(years: Int): Calendar? {
-        return if (years >= 0) {
-            val calendar = Calendar.getInstance()
-            calendar[Calendar.YEAR] = calendar[Calendar.YEAR] - years
-            calendar
-        } else {
-            null
-        }
+    fun getCalendarMinusYears(years: Int): Calendar? = if (years >= 0) {
+        val calendar = Calendar.getInstance()
+        calendar[Calendar.YEAR] = calendar[Calendar.YEAR] - years
+        calendar
+    } else {
+        null
     }
 
     fun getProductListParameters(productList: List<Product>): JSONArray {
@@ -950,7 +917,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             product.couponCode?.let {
                 productProperties.put(
                     CommerceEventUtils.Constants.ATT_PRODUCT_COUPON_CODE,
-                    it
+                    it,
                 )
             }
             product.brand?.let {
@@ -973,15 +940,15 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             }
             productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_PRICE,
-                product.unitPrice
+                product.unitPrice,
             )
             productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_QUANTITY,
-                product.quantity
+                product.quantity,
             )
             productProperties.put(
                 CommerceEventUtils.Constants.ATT_PRODUCT_TOTAL_AMOUNT,
-                product.totalAmount
+                product.totalAmount,
             )
 
             productArray.put(productProperties)
@@ -996,7 +963,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             promotion.creative?.let {
                 promotionProperties.put(
                     CommerceEventUtils.Constants.ATT_PROMOTION_CREATIVE,
-                    it
+                    it,
                 )
             }
             promotion.id?.let {
@@ -1008,7 +975,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
             promotion.position?.let {
                 promotionProperties.put(
                     CommerceEventUtils.Constants.ATT_PROMOTION_POSITION,
-                    it
+                    it,
                 )
             }
             promotionArray.put(promotionProperties)
@@ -1061,9 +1028,10 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
                 toString(key, value)
                 return value
             }
-            return if (true.toString().equals(value, true) || false.toString().equals(
+            return if (true.toString().equals(value, true) ||
+                false.toString().equals(
                     value,
-                    true
+                    true,
                 )
             ) {
                 val newBool = (value).toBoolean()
@@ -1100,10 +1068,8 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         abstract fun toString(key: String, value: String)
     }
 
-    internal inner class BrazePropertiesSetter(
-        private var properties: BrazeProperties,
-        enableTypeDetection: Boolean
-    ) : StringTypeParser(enableTypeDetection) {
+    internal inner class BrazePropertiesSetter(private var properties: BrazeProperties, enableTypeDetection: Boolean) :
+        StringTypeParser(enableTypeDetection) {
         override fun toInt(key: String, value: Int) {
             properties.addProperty(key, value)
         }
@@ -1125,10 +1091,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         }
     }
 
-    internal inner class UserAttributeSetter(
-        private var brazeUser: BrazeUser,
-        enableTypeDetection: Boolean
-    ) : StringTypeParser(enableTypeDetection) {
+    internal inner class UserAttributeSetter(private var brazeUser: BrazeUser, enableTypeDetection: Boolean) : StringTypeParser(enableTypeDetection) {
         override fun toInt(key: String, value: Int) {
             brazeUser.setCustomUserAttribute(key, value)
         }
@@ -1160,6 +1123,7 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
         const val NAME = "Appboy"
+
         // if this flag is true, kit will send Product name as sku
         const val REPLACE_SKU_AS_PRODUCT_NAME = "replaceSkuWithProductName"
         private const val PREF_KEY_HAS_SYNCED_ATTRIBUTES = "appboy::has_synced_attributes"
@@ -1175,8 +1139,8 @@ open class AppboyKit : KitIntegration(), AttributeListener, CommerceListener,
         private const val UNSUBSCRIBED = "unsubscribed"
         private const val SUBSCRIBED = "subscribed"
 
-        //Constants for Read Consent
-        private const val consentMappingSDK = "consentMappingSDK"
+        // Constants for Read Consent
+        private const val CONSENT_MAPPING_SDK = "consentMappingSDK"
         private const val KEY_GOOGLE_AD_USER_DATA = "\$google_ad_user_data"
         private const val KEY_GOOGLE_AD_PERSONALIZATION = "\$google_ad_personalization"
 

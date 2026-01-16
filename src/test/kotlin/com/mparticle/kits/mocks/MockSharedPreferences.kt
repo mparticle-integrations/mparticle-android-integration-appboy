@@ -2,10 +2,12 @@ package com.mparticle.kits.mocks
 
 import android.content.SharedPreferences
 import android.content.SharedPreferences.Editor
-import java.util.TreeSet
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import java.util.TreeSet
 
-class MockSharedPreferences : SharedPreferences, Editor {
+class MockSharedPreferences :
+    SharedPreferences,
+    Editor {
 
     override fun getAll(): Map<String, Any>? = null
 
