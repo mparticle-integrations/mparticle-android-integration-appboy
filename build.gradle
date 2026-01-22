@@ -1,5 +1,6 @@
 buildscript {
-    if (!project.hasProperty('version') || project.version == 'unspecified') {
+    ext.kotlin_version = '2.0.20'
+    if (!project.hasProperty('version') || project.version.equals('unspecified')) {
         project.version = '+'
     }
 
@@ -9,15 +10,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.1'
+        classpath 'com.android.tools.build:gradle:8.1.4'
         classpath 'com.mparticle:android-kit-plugin:' + project.version
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.20'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 plugins {
     id "org.sonarqube" version "3.5.0.2730"
-    id "org.jlleitschuh.gradle.ktlint" version "11.2.0"
+    id "org.jlleitschuh.gradle.ktlint" version "13.0.0"
 }
 
 sonarqube {
@@ -29,16 +30,29 @@ sonarqube {
 }
 
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
-apply plugin: "kotlin-android"
+apply plugin: 'kotlin-android'
 apply plugin: 'com.mparticle.kit'
 
 android {
+    namespace 'com.mparticle.kits.appboy'
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         minSdkVersion 21
     }
+    lint {
+        // Workaround for lint internal crash
+        abortOnError false
+        // Ignore obsolete custom lint checks from older fragment library
+        disable 'ObsoleteLintCustomCheck'
+    }
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
     }
     testOptions {
         unitTests.all {
