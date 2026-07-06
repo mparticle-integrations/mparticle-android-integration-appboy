@@ -2,6 +2,27 @@
 
 This repository contains the [Braze](https://www.braze.com/) integration for the [mParticle Android SDK](https://github.com/mParticle/mparticle-android-sdk).
 
+This kit targets **Braze Android SDK 42.x** (`com.braze:android-sdk-ui:[42.3.0,43.0.0)`), which requires Kotlin 2.2.x.
+
+### Recommended eCommerce Events (opt-in)
+
+Braze 42.3.0+ introduces [recommended eCommerce events](https://www.braze.com/docs/developer_guide/analytics/logging_ecommerce_events/#android). This kit can forward mParticle commerce events using that schema when the connection setting **`useEcommerceRecommendedEvents`** is enabled. When the setting is off (the default), commerce forwarding is unchanged and fully backward compatible.
+
+When enabled, supported mParticle commerce actions map to Braze recommended events:
+
+| mParticle commerce action | Braze recommended event |
+| :--- | :--- |
+| `add_to_cart` | `ecommerce.cart_updated` (action `add`) |
+| `remove_from_cart` | `ecommerce.cart_updated` (action `remove`) |
+| `checkout` | `ecommerce.checkout_started` |
+| `view_detail` | `ecommerce.product_viewed` (one per product) |
+| `purchase` | `ecommerce.order_placed` |
+| `refund` | `ecommerce.order_refunded` (custom event; no typed Braze API) |
+
+- **Minimum Braze Android SDK version: 42.3.0** (the `logEcommerceEvent` API). Any commerce action not in the table above continues to use legacy forwarding.
+- Attributes without a direct Braze equivalent (`cart_id`, `checkout_id`, `source`, product `brand`/`category`/`coupon_code`/`position`, `tax`, `shipping`, etc.) are placed inside the event- or product-level `metadata` object, per Braze's strict recommended-event schema. `source` is reported as `"android"`.
+- `cart_id`/`checkout_id` fall back to the current mParticle session id and then a generated UUID when not supplied as commerce custom attributes.
+
 ### Example App
 
 This repository contains an [example app](https://github.com/mparticle-integrations/mparticle-android-integration-appboy/tree/master/example) showing how to implement mParticle, Braze, and Firebase Cloud Messaging. The key changes you need to make to your app are below, and please also reference mParticle and Braze's documentation:

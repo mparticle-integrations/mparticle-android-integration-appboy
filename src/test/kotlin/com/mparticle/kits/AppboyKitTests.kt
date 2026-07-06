@@ -1318,7 +1318,7 @@ class AppboyKitTests {
             "\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
 
         var kitConfiguration =
-            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(map.toMutableMap() as Map<*, *>)))
         kit.configuration = kitConfiguration
 
         val marketingConsent =
@@ -1356,7 +1356,7 @@ class AppboyKitTests {
             "\\\"maptype\\\":\\\"ConsentPurposes\\\",\\\"value\\\":\\\"google_ad_personalization\\\"}]"
 
         var kitConfiguration =
-            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+            MockKitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(map.toMutableMap() as Map<*, *>)))
         kit.configuration = kitConfiguration
 
         val marketingConsent =
@@ -1435,7 +1435,7 @@ class AppboyKitTests {
         map["defaultAdPersonalizationConsentSDK"] = "Denied"
 
         kit.configuration =
-            KitConfiguration.createKitConfiguration(JSONObject().put("as", map.toMutableMap()))
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(map.toMutableMap() as Map<*, *>)))
 
         val marketingConsent =
             GDPRConsent
@@ -1474,7 +1474,7 @@ class AppboyKitTests {
         val kit = MockAppboyKit()
 
         kit.configuration =
-            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(settings as Map<*, *>)))
         kit.onKitCreate(settings, MockContextApplication())
         val product =
             Product
@@ -1504,7 +1504,7 @@ class AppboyKitTests {
         val kit = MockAppboyKit()
 
         kit.configuration =
-            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(settings as Map<*, *>)))
         kit.onKitCreate(settings, MockContextApplication())
         val product =
             Product
@@ -1533,7 +1533,7 @@ class AppboyKitTests {
         val kit = MockAppboyKit()
 
         kit.configuration =
-            KitConfiguration.createKitConfiguration(JSONObject().put("as", settings))
+            KitConfiguration.createKitConfiguration(JSONObject().put("as", JSONObject(settings as Map<*, *>)))
         kit.onKitCreate(settings, MockContextApplication())
         val product =
             Product

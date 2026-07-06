@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '2.0.20'
+    ext.kotlin_version = '2.2.20'
     if (!project.hasProperty('version') || project.version.equals('unspecified')) {
         // Bounded range avoids resolving to 6.0.0-rc.1+ on Maven Central when
         // built standalone. The mparticle-android-sdk CI passes -Pversion explicitly.
@@ -69,6 +69,6 @@ repositories {
 
 dependencies {
     compileOnly 'com.google.firebase:firebase-messaging:[10.2.1, )'
-    api 'com.braze:android-sdk-ui:41.1.1'
+    api 'com.braze:android-sdk-ui:[42.3.0,43.0.0)'
     testImplementation  files('libs/java-json.jar')
 }

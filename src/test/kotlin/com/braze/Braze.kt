@@ -4,6 +4,7 @@ import android.content.Context
 import com.braze.configuration.BrazeConfig
 import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
+import com.braze.models.recommended.ecommerce.EcommerceEvent
 import com.mparticle.kits.BrazePurchase
 import java.math.BigDecimal
 
@@ -37,9 +38,14 @@ class Braze {
         purchases.add(BrazePurchase(sku, currency, unitPrice, quantity, purchaseProperties))
     }
 
+    fun logEcommerceEvent(event: EcommerceEvent) {
+        ecommerceEvents.add(event)
+    }
+
     companion object {
         val purchases: MutableList<BrazePurchase> = ArrayList()
         val events: MutableMap<String, BrazeProperties> = HashMap()
+        val ecommerceEvents: MutableList<EcommerceEvent> = ArrayList()
 
         fun clearPurchases() {
             purchases.clear()
@@ -47,6 +53,10 @@ class Braze {
 
         fun clearEvents() {
             events.clear()
+        }
+
+        fun clearEcommerceEvents() {
+            ecommerceEvents.clear()
         }
 
         val currentUser = BrazeUser()

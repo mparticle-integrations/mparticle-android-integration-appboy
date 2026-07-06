@@ -16,6 +16,12 @@ import com.braze.enums.NotificationSubscriptionType
 import com.braze.enums.SdkFlavor
 import com.braze.events.IValueCallback
 import com.braze.models.outgoing.BrazeProperties
+import com.braze.models.recommended.ecommerce.CartUpdatedAction
+import com.braze.models.recommended.ecommerce.CartUpdatedEvent
+import com.braze.models.recommended.ecommerce.CheckoutStartedEvent
+import com.braze.models.recommended.ecommerce.EcommerceProduct
+import com.braze.models.recommended.ecommerce.OrderPlacedEvent
+import com.braze.models.recommended.ecommerce.ProductViewedEvent
 import com.braze.push.BrazeFirebaseMessagingService
 import com.braze.push.BrazeNotificationUtils.isBrazePushMessage
 import com.google.firebase.messaging.RemoteMessage
@@ -61,6 +67,7 @@ open class AppboyKit :
     KitIntegration.UserAttributeListener {
     var enableTypeDetection = false
     var bundleCommerceEvents = false
+    var useEcommerceRecommendedEvents = false
     var isMpidIdentityType = false
     var identityType: IdentityType? = null
     var subscriptionGroupIds: MutableMap<String, String>? = mutableMapOf()
@@ -97,6 +104,14 @@ open class AppboyKit :
                 bundleCommerceEvents = bundleCommerce.toBoolean()
             } catch (e: Exception) {
                 bundleCommerceEvents = false
+            }
+        }
+        val useEcommerceRecommended = settings[USE_ECOMMERCE_RECOMMENDED_EVENTS]
+        if (!KitUtils.isEmpty(useEcommerceRecommended)) {
+            try {
+                useEcommerceRecommendedEvents = useEcommerceRecommended.toBoolean()
+            } catch (e: Exception) {
+                useEcommerceRecommendedEvents = false
             }
         }
         forwardScreenViews = settings[FORWARD_SCREEN_VIEWS].toBoolean()
@@ -251,6 +266,13 @@ open class AppboyKit :
     ): List<ReportingMessage> = emptyList()
 
     override fun logEvent(event: CommerceEvent): List<ReportingMessage> {
+        if (useEcommerceRecommendedEvents) {
+            val recommendedMessages = routeRecommendedCommerceEvent(event)
+            if (recommendedMessages != null) {
+                queueDataFlush()
+                return recommendedMessages
+            }
+        }
         val messages: MutableList<ReportingMessage> = LinkedList()
         if (!KitUtils.isEmpty(event.productAction) &&
             event.productAction.equals(
@@ -903,6 +925,275 @@ open class AppboyKit :
         }
     }
 
+    /**
+     * Attempts to forward the commerce event using Braze's recommended eCommerce event schema.
+     *
+     * Returns the resulting reporting messages when the event was handled, or `null` when it should
+     * fall back to the legacy forwarding path (no products, or an unsupported product action).
+     */
+    private fun routeRecommendedCommerceEvent(event: CommerceEvent): List<ReportingMessage>? {
+        val products = event.products
+        if (products.isNullOrEmpty()) {
+            return null
+        }
+        val action = event.productAction
+        if (KitUtils.isEmpty(action)) {
+            return null
+        }
+        val currency =
+            event.currency?.takeIf { it.isNotEmpty() }
+                ?: CommerceEventUtils.Constants.DEFAULT_CURRENCY_CODE
+        val eventMetadataMap = buildEventMetadataMap(event)
+        val eventMetadata = mapToBrazeProperties(eventMetadataMap)
+        val braze = Braze.getInstance(context)
+        when {
+            action.equals(Product.ADD_TO_CART, true) || action.equals(Product.REMOVE_FROM_CART, true) -> {
+                val cartAction =
+                    if (action.equals(Product.ADD_TO_CART, true)) {
+                        CartUpdatedAction.ADD
+                    } else {
+                        CartUpdatedAction.REMOVE
+                    }
+                braze.logEcommerceEvent(
+                    CartUpdatedEvent(
+                        cartId = recommendedCartId(event),
+                        currency = currency,
+                        source = ECOMMERCE_SOURCE,
+                        totalValue = recommendedTotalValue(event),
+                        products = recommendedLineItems(products),
+                        metadata = eventMetadata,
+                        action = cartAction,
+                    ),
+                )
+            }
+            action.equals(Product.CHECKOUT, true) -> {
+                braze.logEcommerceEvent(
+                    CheckoutStartedEvent(
+                        checkoutId = recommendedCheckoutId(event),
+                        currency = currency,
+                        source = ECOMMERCE_SOURCE,
+                        totalValue = recommendedTotalValue(event),
+                        products = recommendedLineItems(products),
+                        cartId = recommendedCartId(event),
+                        metadata = eventMetadata,
+                    ),
+                )
+            }
+            action.equals(Product.DETAIL, true) -> {
+                for (product in products) {
+                    braze.logEcommerceEvent(
+                        ProductViewedEvent(
+                            productId = product.sku,
+                            productName = product.name,
+                            variantId = recommendedVariantId(product),
+                            price = product.unitPrice,
+                            currency = currency,
+                            source = ECOMMERCE_SOURCE,
+                            imageUrl = recommendedImageUrl(product),
+                            productUrl = recommendedProductUrl(product),
+                            metadata = combinedProductMetadata(product, eventMetadataMap),
+                        ),
+                    )
+                }
+            }
+            action.equals(Product.PURCHASE, true) -> {
+                braze.logEcommerceEvent(
+                    OrderPlacedEvent(
+                        orderId = recommendedOrderId(event),
+                        currency = currency,
+                        source = ECOMMERCE_SOURCE,
+                        totalValue = recommendedTotalValue(event),
+                        products = recommendedLineItems(products),
+                        cartId = recommendedCartId(event),
+                        totalDiscounts = recommendedTotalDiscounts(event),
+                        metadata = eventMetadata,
+                    ),
+                )
+            }
+            action.equals(Product.REFUND, true) -> {
+                // Braze has no typed order_refunded event; forward it as a custom event that
+                // mirrors the recommended ecommerce.order_refunded schema.
+                val properties = BrazeProperties()
+                properties.addProperty(RECOMMENDED_ORDER_ID_KEY, recommendedOrderId(event))
+                properties.addProperty(RECOMMENDED_TOTAL_VALUE_KEY, recommendedTotalValue(event))
+                properties.addProperty(RECOMMENDED_CURRENCY_KEY, currency)
+                properties.addProperty(RECOMMENDED_SOURCE_KEY, ECOMMERCE_SOURCE)
+                properties.addProperty(PRODUCT_KEY, recommendedProductsJson(products))
+                recommendedTotalDiscounts(event)?.let {
+                    properties.addProperty(RECOMMENDED_TOTAL_DISCOUNTS_KEY, it)
+                }
+                if (eventMetadataMap.isNotEmpty()) {
+                    properties.addProperty(METADATA_KEY, JSONObject(eventMetadataMap as Map<*, *>))
+                }
+                braze.logCustomEvent(ORDER_REFUNDED_EVENT_NAME, properties)
+            }
+            else -> return null
+        }
+        return listOf(ReportingMessage.fromEvent(this, event))
+    }
+
+    private fun recommendedSessionId(): String? = MParticle.getInstance()?.currentSession?.sessionUUID
+
+    private fun recommendedCustomAttribute(
+        event: CommerceEvent,
+        key: String,
+    ): String? {
+        val value = event.customAttributeStrings?.get(key)
+        return if (value.isNullOrEmpty()) null else value
+    }
+
+    private fun recommendedCartId(event: CommerceEvent): String =
+        recommendedCustomAttribute(event, CART_ID_ATTRIBUTE)
+            ?: recommendedSessionId()
+            ?: java.util.UUID
+                .randomUUID()
+                .toString()
+
+    private fun recommendedCheckoutId(event: CommerceEvent): String =
+        recommendedCustomAttribute(event, CHECKOUT_ID_ATTRIBUTE)
+            ?: recommendedSessionId()
+            ?: java.util.UUID
+                .randomUUID()
+                .toString()
+
+    private fun recommendedOrderId(event: CommerceEvent): String {
+        val transactionId = event.transactionAttributes?.id
+        if (!transactionId.isNullOrEmpty()) {
+            return transactionId
+        }
+        return recommendedSessionId() ?: java.util.UUID
+            .randomUUID()
+            .toString()
+    }
+
+    private fun recommendedVariantId(product: Product): String {
+        val variant = product.variant
+        return if (variant.isNullOrEmpty()) product.sku else variant
+    }
+
+    private fun recommendedImageUrl(product: Product): String? = recommendedProductAttribute(product, IMAGE_URL_ATTRIBUTES)
+
+    private fun recommendedProductUrl(product: Product): String? = recommendedProductAttribute(product, PRODUCT_URL_ATTRIBUTES)
+
+    private fun recommendedProductAttribute(
+        product: Product,
+        keys: List<String>,
+    ): String? {
+        val attributes = product.customAttributes ?: return null
+        for (key in keys) {
+            val value = attributes[key]
+            if (!value.isNullOrEmpty()) {
+                return value
+            }
+        }
+        return null
+    }
+
+    private fun recommendedTotalValue(event: CommerceEvent): Double {
+        event.transactionAttributes?.revenue?.let { return it }
+        var total = 0.0
+        event.products?.forEach { product ->
+            val quantity = product.quantity.toLong().coerceAtLeast(1L)
+            total += product.unitPrice * quantity
+        }
+        return total
+    }
+
+    private fun recommendedTotalDiscounts(event: CommerceEvent): Double? {
+        val value = recommendedCustomAttribute(event, TOTAL_DISCOUNTS_ATTRIBUTE) ?: return null
+        return value.toDoubleOrNull()
+    }
+
+    private fun recommendedLineItems(products: List<Product>): List<EcommerceProduct> =
+        products.map { product ->
+            EcommerceProduct(
+                productId = product.sku,
+                productName = product.name,
+                variantId = recommendedVariantId(product),
+                price = product.unitPrice,
+                quantity = product.quantity.toLong().coerceAtLeast(1L),
+                imageUrl = recommendedImageUrl(product),
+                productUrl = recommendedProductUrl(product),
+                metadata = mapToBrazeProperties(buildProductMetadataMap(product)),
+            )
+        }
+
+    private fun recommendedProductsJson(products: List<Product>): JSONArray {
+        val array = JSONArray()
+        for (product in products) {
+            val obj = JSONObject()
+            obj.put(RECOMMENDED_PRODUCT_ID_KEY, product.sku)
+            obj.put(RECOMMENDED_PRODUCT_NAME_KEY, product.name)
+            obj.put(RECOMMENDED_VARIANT_ID_KEY, recommendedVariantId(product))
+            obj.put(RECOMMENDED_QUANTITY_KEY, product.quantity.toLong().coerceAtLeast(1L))
+            obj.put(RECOMMENDED_PRICE_KEY, product.unitPrice)
+            recommendedImageUrl(product)?.let { obj.put(RECOMMENDED_IMAGE_URL_KEY, it) }
+            recommendedProductUrl(product)?.let { obj.put(RECOMMENDED_PRODUCT_URL_KEY, it) }
+            val productMetadata = buildProductMetadataMap(product)
+            if (productMetadata.isNotEmpty()) {
+                obj.put(METADATA_KEY, JSONObject(productMetadata as Map<*, *>))
+            }
+            array.put(obj)
+        }
+        return array
+    }
+
+    private fun buildProductMetadataMap(product: Product): Map<String, Any> {
+        val metadata = linkedMapOf<String, Any>()
+        product.brand?.let { if (it.isNotEmpty()) metadata[METADATA_BRAND_KEY] = it }
+        product.category?.let { if (it.isNotEmpty()) metadata[METADATA_CATEGORY_KEY] = it }
+        product.couponCode?.let { if (it.isNotEmpty()) metadata[METADATA_COUPON_CODE_KEY] = it }
+        product.position?.let { metadata[METADATA_POSITION_KEY] = it }
+        metadata[METADATA_SKU_KEY] = product.sku
+        product.customAttributes?.forEach { (key, value) ->
+            if (key !in IMAGE_URL_ATTRIBUTES && key !in PRODUCT_URL_ATTRIBUTES && !value.isNullOrEmpty()) {
+                metadata[key] = value
+            }
+        }
+        return metadata
+    }
+
+    private fun buildEventMetadataMap(event: CommerceEvent): Map<String, Any> {
+        val metadata = linkedMapOf<String, Any>()
+        event.customAttributeStrings?.forEach { (key, value) ->
+            if (!value.isNullOrEmpty()) {
+                metadata[key] = value
+            }
+        }
+        event.transactionAttributes?.affiliation?.let { if (it.isNotEmpty()) metadata[METADATA_AFFILIATION_KEY] = it }
+        event.transactionAttributes?.couponCode?.let { if (it.isNotEmpty()) metadata[METADATA_COUPON_CODE_KEY] = it }
+        event.transactionAttributes?.tax?.let { metadata[METADATA_TAX_KEY] = it }
+        event.transactionAttributes?.shipping?.let { metadata[METADATA_SHIPPING_KEY] = it }
+        return metadata
+    }
+
+    private fun combinedProductMetadata(
+        product: Product,
+        eventMetadataMap: Map<String, Any>,
+    ): BrazeProperties? {
+        val combined = linkedMapOf<String, Any>()
+        combined.putAll(buildProductMetadataMap(product))
+        combined.putAll(eventMetadataMap)
+        return mapToBrazeProperties(combined)
+    }
+
+    private fun mapToBrazeProperties(map: Map<String, Any>): BrazeProperties? {
+        if (map.isEmpty()) {
+            return null
+        }
+        val properties = BrazeProperties()
+        for ((key, value) in map) {
+            when (value) {
+                is Int -> properties.addProperty(key, value)
+                is Long -> properties.addProperty(key, value)
+                is Double -> properties.addProperty(key, value)
+                is Boolean -> properties.addProperty(key, value)
+                else -> properties.addProperty(key, value.toString())
+            }
+        }
+        return properties
+    }
+
     override fun willHandlePushMessage(intent: Intent): Boolean =
         if (!(settings[PUSH_ENABLED].toBoolean())) {
             false
@@ -1363,6 +1654,7 @@ open class AppboyKit :
         const val USER_IDENTIFICATION_TYPE = "userIdentificationType"
         const val ENABLE_TYPE_DETECTION = "enableTypeDetection"
         const val BUNDLE_COMMERCE_EVENTS = "bundleCommerceEventData"
+        const val USE_ECOMMERCE_RECOMMENDED_EVENTS = "useEcommerceRecommendedEvents"
         const val SUBSCRIPTION_GROUP_MAPPING = "subscriptionGroupMapping"
         const val HOST = "host"
         const val PUSH_ENABLED = "push_enabled"
@@ -1392,5 +1684,35 @@ open class AppboyKit :
         const val PRODUCT_KEY = "products"
         const val PROMOTION_KEY = "promotions"
         const val IMPRESSION_KEY = "impressions"
+
+        // Braze recommended eCommerce events
+        private const val ECOMMERCE_SOURCE = "android"
+        private const val ORDER_REFUNDED_EVENT_NAME = "ecommerce.order_refunded"
+        private const val CART_ID_ATTRIBUTE = "cart_id"
+        private const val CHECKOUT_ID_ATTRIBUTE = "checkout_id"
+        private const val TOTAL_DISCOUNTS_ATTRIBUTE = "total_discounts"
+        private val IMAGE_URL_ATTRIBUTES = listOf("image_url", "Image URL")
+        private val PRODUCT_URL_ATTRIBUTES = listOf("product_url", "Product URL")
+        private const val METADATA_KEY = "metadata"
+        private const val METADATA_BRAND_KEY = "brand"
+        private const val METADATA_CATEGORY_KEY = "category"
+        private const val METADATA_COUPON_CODE_KEY = "coupon_code"
+        private const val METADATA_POSITION_KEY = "position"
+        private const val METADATA_SKU_KEY = "sku"
+        private const val METADATA_AFFILIATION_KEY = "affiliation"
+        private const val METADATA_TAX_KEY = "tax"
+        private const val METADATA_SHIPPING_KEY = "shipping"
+        private const val RECOMMENDED_ORDER_ID_KEY = "order_id"
+        private const val RECOMMENDED_TOTAL_VALUE_KEY = "total_value"
+        private const val RECOMMENDED_CURRENCY_KEY = "currency"
+        private const val RECOMMENDED_SOURCE_KEY = "source"
+        private const val RECOMMENDED_TOTAL_DISCOUNTS_KEY = "total_discounts"
+        private const val RECOMMENDED_PRODUCT_ID_KEY = "product_id"
+        private const val RECOMMENDED_PRODUCT_NAME_KEY = "product_name"
+        private const val RECOMMENDED_VARIANT_ID_KEY = "variant_id"
+        private const val RECOMMENDED_QUANTITY_KEY = "quantity"
+        private const val RECOMMENDED_PRICE_KEY = "price"
+        private const val RECOMMENDED_IMAGE_URL_KEY = "image_url"
+        private const val RECOMMENDED_PRODUCT_URL_KEY = "product_url"
     }
 }
